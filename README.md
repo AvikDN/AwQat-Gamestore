@@ -1,16 +1,66 @@
-# React + Vite
+# AwQat Gamestore
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Welcome to the official repository for **AwQat Gamestore**, a web development project built by **Team Jade Codex** for CSE242.
 
-Currently, two official plugins are available:
+## About
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+AwQat Gamestore is a web platform that lets you purchase in-game currencies and digital gaming services using convenient local payment methods. Many gamers struggle to buy digital items because they lack international credit cards. We solve this problem by providing a secure, streamlined ordering process tailored for local transactions. You can browse products, manage orders, and track your payments from a single dashboard.
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **User Accounts:** Register and manage your profile securely.
+* **Product Browsing:** Navigate through available currencies and services for multiple games.
+* **Order Management:** Track your purchases from checkout to delivery.
+* **Payment Tracking:** Monitor your local payment status in real time.
+* **Notifications:** Receive updates on your order progress.
+* **Intuitive UI:** Access a responsive interface that works smoothly on both desktop and mobile devices.
 
-## Expanding the ESLint configuration
+## Technology Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+* **Frontend:** ReactJS
+* **Backend:** Django (with Django REST Framework)
+* **Database:** PostgreSQL
+* **Design Tool:** Figma
+
+## Getting Started
+
+### Prerequisites
+
+Install Node.js (for React), Python (for Django), and PostgreSQL on your machine.
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-repo-link/awqat-gamestore.git
+cd awqat-gamestore
+
+```
+
+
+2. Set up the backend:
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+
+```
+
+
+3. Set up the frontend:
+```bash
+cd ../frontend
+npm install
+npm start
+
+```
+
+
+4. Open `http://localhost:3000` to view the frontend in your browser. The backend API will run on `http://localhost:8000`.
+
+## License
+
+This project is created for the CSE242 Web Development course.
