@@ -1,5 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Tiny5&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Bricolage Grotesque", sans-serif;
+  --font-tiny: "Tiny5", sans-serif;
+}
+
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark;
 }
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Tiny5&display=swap');
