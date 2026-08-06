@@ -16,7 +16,7 @@ export default function Nav() {
           alt="AwQat Logo" 
           className="h-8 md:h-12 w-auto object-contain" 
         />
-        <span className="text-2xl md:text-4xl text-black tracking-tight">
+        <span className="text-2xl md:text-4xl text-white tracking-tight">
           AwQat
         </span>
       </a>
@@ -24,9 +24,9 @@ export default function Nav() {
 
       {/* Glass UI Center Links (Desktop Only) - Now absolutely centered */}
       <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-4 lg:gap-8 px-6 lg:px-8 py-2 lg:py-3 rounded-full bg-white/20 backdrop-blur-md border border-white/30 shadow-lg z-20">
-        <a href="/" className="font-bold text-black hover:opacity-70 transition-opacity">Home</a>
-        <a href="/products" className="text-black hover:opacity-70 transition-opacity">Products</a>
-        <a href="/contact" className="text-black hover:opacity-70 transition-opacity">Contact</a>
+        <a href="/" className="font-bold  text-white hover:opacity-70 transition-opacity">Home</a>
+        <a href="/products" className=" text-white hover:opacity-70 transition-opacity">Products</a>
+        <a href="/contact" className=" text-white hover:opacity-70 transition-opacity">Contact</a>
       </div>
 
       {/* Right Section */}

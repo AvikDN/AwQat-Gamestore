@@ -90,7 +90,7 @@ export default function Categories() {
       </style>
 
       <div className="flex items-center justify-center mb-16">
-        <h2 className="text-4xl md:text-5xl font-bold text-black tracking-tight">Categories</h2>
+        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">Categories</h2>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">

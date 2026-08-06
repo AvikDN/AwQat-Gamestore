@@ -88,7 +88,7 @@ export default function Upcoming() {
                 }}
               >
                 {/* Scaled typography for mobile vs desktop */}
-                <h2 className="text-3xl md:text-5xl lg:text-7xl font-semibold text-black mb-4 md:mb-8 tracking-wide pointer-events-auto leading-tight">
+                <h2 className="text-3xl md:text-5xl lg:text-7xl font-semibold text-white mb-4 md:mb-8 tracking-wide pointer-events-auto leading-tight">
                   {slide.title}
                 </h2>
                 <button className="bg-[#5c5c5c] text-white px-5 py-2.5 md:px-8 md:py-4 rounded-xl text-sm md:text-lg font-medium w-max hover:bg-gray-700 transition-colors pointer-events-auto shadow-lg">
