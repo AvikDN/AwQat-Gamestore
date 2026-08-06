@@ -4,6 +4,8 @@ import Categories from '../components/Home/Categories';
 import bgImage from '../assets/pics/Categories/bg.jpg';
 import FeProducts from '../components/Home/FeProducts';
 import Offers from '../components/Home/Offers';
+import Reviews from '../components/Home/Reviews'; 
+
 const Home = () => {
     return (
        <div 
@@ -12,7 +14,7 @@ const Home = () => {
         >
             
             <main className="relative z-10 w-full pt-32 pb-16 flex flex-col items-center justify-center">
-                <Upcoming />
+                {/* <Upcoming /> */}
                 
                 <div className="mt-8 flex items-center justify-between w-full max-w-100 bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 shadow-lg">
                     <input 
@@ -29,6 +31,7 @@ const Home = () => {
                 <Categories/>
                 <FeProducts />
                 <Offers/> 
+                <Reviews/> 
             </main>
         </div>
     );
