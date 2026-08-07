@@ -1,16 +1,29 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import apiClient from '../../services/api-client';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 100, damping: 15 },
+  },
+};
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
-  const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const sectionRef = useRef(null);
 
-  const rotations = [
-    '-rotate-6', 'rotate-3', '-rotate-3', 'rotate-6',
-    '-rotate-2', 'rotate-2', '-rotate-6', 'rotate-6'
-  ];
+  const rotations = [-6, 3, -3, 6, -2, 2, -6, 6];
 
   useEffect(() => {
     setIsLoading(true);
@@ -24,95 +37,82 @@ export default function Categories() {
         console.error("Error fetching categories:", error);
         setIsLoading(false);
       });
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      {
-        rootMargin: '0px 0px -15% 0px',
-        threshold: 0.1
-      }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
   }, []);
 
   return (
-    <section ref={sectionRef} className="w-full max-w-[1200px] mx-auto py-16 px-4 md:px-8 overflow-visible">
+    <section className="w-full max-w-[1200px] mx-auto py-16 px-4 md:px-8 overflow-visible">
       
-      <style>
-        {`
-          .slide-up-physical {
-            transform: translateY(150px);
-            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-          }
-          .slide-up-physical.in-view {
-            transform: translateY(0);
-          }
-        `}
-      </style>
-
       <div className="flex items-center justify-center mb-16">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">Categories</h2>
+        <motion.h2 
+          className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          Categories
+        </motion.h2>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+      <motion.div 
+        // 1. Added a dynamic key here so the animation replays when data loads
+        key={isLoading ? 'loading' : 'loaded'}
+        className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+      >
         {isLoading 
           ? [...Array(8)].map((_, index) => {
-              const rotateClass = rotations[index % rotations.length];
+              const baseRotation = rotations[index % rotations.length];
+              
               return (
-                <div 
+                <motion.div 
                   key={`skeleton-${index}`} 
-                  className={`slide-up-physical ${isVisible ? 'in-view' : ''}`}
-                  style={{ transitionDelay: `${index * 50}ms` }}
+                  variants={itemVariants}
+                  style={{ rotate: baseRotation }}
+                  className="flex flex-col p-3 pb-8 bg-[#8c8c8c] rounded-lg shadow-xl"
                 >
-                  <div className={`flex flex-col p-3 pb-8 bg-[#8c8c8c] rounded-lg shadow-xl transform ${rotateClass}`}>
-                    <div className="bg-gray-300 animate-pulse aspect-[4/3] rounded w-full shadow-inner"></div>
-                    <div className="mt-6 flex justify-center">
-                      <div className="h-6 w-24 bg-gray-400 animate-pulse rounded"></div>
-                    </div>
+                  <div className="bg-gray-300 animate-pulse aspect-[4/3] rounded w-full shadow-inner"></div>
+                  <div className="mt-6 flex justify-center">
+                    <div className="h-6 w-24 bg-gray-400 animate-pulse rounded"></div>
                   </div>
-                </div>
+                </motion.div>
               );
             })
           : categories.map((cat, index) => {
-              const rotateClass = rotations[index % rotations.length];
+              const baseRotation = rotations[index % rotations.length];
+              
               return (
-                <div 
+                <motion.div 
                   key={cat.id} 
-                  className={`slide-up-physical ${isVisible ? 'in-view' : ''}`}
-                  style={{ transitionDelay: `${index * 50}ms` }}
+                  variants={itemVariants}
+                  whileHover={{ 
+                    scale: 1.05, 
+                    rotate: 0, 
+                    y: -10, 
+                    transition: { type: "spring", stiffness: 300, damping: 20 } 
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{ rotate: baseRotation }}
+                  className="flex flex-col p-3 pb-8 bg-[#8c8c8c] rounded-lg shadow-xl cursor-pointer"
                 >
-                  <div 
-                    className={`flex flex-col p-3 pb-8 bg-[#8c8c8c] rounded-lg shadow-xl cursor-pointer transform ${rotateClass} hover:rotate-0 hover:scale-105 hover:-translate-y-2 transition-all duration-300 ease-out`}
-                  >
-                    <div className="bg-white aspect-[4/3] rounded flex items-center justify-center shadow-inner overflow-hidden">
-                      <img 
-                        src={cat.image} 
-                        alt={cat.name} 
-                        className="w-16 h-16 object-contain" 
-                      />
-                    </div>
-                    <div className="text-center mt-6 font-extrabold text-xl text-black tracking-wide">
-                      {cat.name}
-                    </div>
+                  <div className="bg-white aspect-[4/3] rounded flex items-center justify-center shadow-inner overflow-hidden">
+                    <img 
+                      src={cat.image} 
+                      alt={cat.name} 
+                      className="w-16 h-16 object-contain" 
+                    />
                   </div>
-                </div>
+                  <div className="text-center mt-6 font-extrabold text-xl text-black tracking-wide">
+                    {cat.name}
+                  </div>
+                </motion.div>
               );
             })
         }
-      </div>
+      </motion.div>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '../../services/api-client';
 
 export default function Offers() {
@@ -58,7 +59,7 @@ export default function Offers() {
         return newCards;
       });
       setIsAnimating(false);
-    }, 300);
+    }, 400);
   };
 
   useEffect(() => {
@@ -71,26 +72,40 @@ export default function Offers() {
     }
   }, [isAnimating, cards.length, isLoading]);
 
-  const getPositionalClasses = (index) => {
+  const getCardAnimation = (index, isAnimating) => {
     if (index === 0) {
-      return isAnimating
-        ? '-translate-x-[30%] rotate-[-5deg] z-40' 
-        : 'translate-x-0 rotate-0 z-30'; 
+      return {
+        x: isAnimating ? "-30%" : "0%",
+        y: 0,
+        rotate: isAnimating ? -5 : 0,
+        scale: 1,
+        zIndex: isAnimating ? 40 : 30,
+        opacity: 1
+      };
     }
     if (index === 1) {
-      return isAnimating
-        ? 'translate-x-0 rotate-0 z-30' 
-        : 'translate-x-[15%] rotate-0 z-20'; 
+      return {
+        x: isAnimating ? "0%" : "15%",
+        y: 0,
+        rotate: 0,
+        scale: isAnimating ? 1 : 0.95,
+        zIndex: isAnimating ? 30 : 20,
+        opacity: 1
+      };
     }
     if (index === 2) {
-      return isAnimating
-        ? 'translate-x-[15%] rotate-0 z-20' 
-        : 'translate-x-[30%] rotate-0 z-10'; 
+      return {
+        x: isAnimating ? "15%" : "30%",
+        y: 0,
+        rotate: 0,
+        scale: isAnimating ? 0.95 : 0.9,
+        zIndex: isAnimating ? 20 : 10,
+        opacity: 1
+      };
     }
-    return 'hidden';
+    return { x: "30%", y: 0, rotate: 0, scale: 0.9, zIndex: 0, opacity: 0 };
   };
 
-  // Only hide the section if it finished loading AND there are no sales
   if (!isLoading && cards.length === 0) {
     return null; 
   }
@@ -99,52 +114,73 @@ export default function Offers() {
     <section className="w-full max-w-[1920px] mx-auto py-12 md:py-20 px-4 md:px-8 xl:px-12 overflow-hidden">
       
       <div className="flex flex-col mb-16 md:mb-24">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">Special Offers</h2>
+        <motion.h2 
+          className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          Special Offers
+        </motion.h2>
       </div>
 
       <div 
         className="relative w-full max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[700px] xl:max-w-[900px] h-[240px] sm:h-[300px] md:h-[360px] lg:h-[480px] xl:h-[600px] mx-auto cursor-pointer" 
         onClick={shuffleCards}
       >
-        {isLoading ? (
-          [...Array(3)].map((_, index) => (
-            <div
-              key={`skeleton-${index}`}
-              className={`absolute top-0 left-0 w-full h-full rounded-[2rem] p-5 md:p-8 lg:p-10 shadow-2xl transition-all duration-500 ease-in-out flex flex-col bg-[#1a1a1a] border border-[#333] ${getPositionalClasses(index)}`}
-            >
-              
-              <div className="relative w-full h-[65%] flex items-center justify-center">
-                {/* Image Skeleton */}
-                <div className="absolute inset-0 w-full h-full bg-[#333] animate-pulse rounded-xl z-10"></div>
+        <AnimatePresence>
+          {isLoading && (
+            [...Array(3)].map((_, index) => (
+              <motion.div
+                key={`skeleton-${index}`}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={getCardAnimation(index, false)}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="absolute top-0 left-0 w-full h-full rounded-[2rem] p-5 md:p-8 lg:p-10 shadow-2xl flex flex-col bg-[#1a1a1a] border border-[#333]"
+              >
+                
+                <div className="relative w-full h-[65%] flex items-center justify-center">
+                  <div className="absolute inset-0 w-full h-full bg-[#333] animate-pulse rounded-xl z-10"></div>
 
-                {/* Badge Skeleton */}
-                <div
-                  className={`absolute -right-4 -bottom-4 md:-right-8 md:-bottom-6 lg:-right-10 lg:-bottom-8 xl:-right-12 xl:-bottom-10 w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48 flex items-center justify-center transition-transform duration-500 origin-center drop-shadow-lg z-20 ${
-                    index === 0 && !isAnimating ? 'scale-100' : 'scale-0'
-                  }`}
-                >
-                  <div 
-                    className="absolute inset-0 bg-[#444] animate-pulse" 
-                    style={{ 
-                      clipPath: 'polygon(50% 0%, 61% 16%, 80% 9%, 83% 27%, 100% 34%, 90% 50%, 100% 65%, 83% 73%, 80% 90%, 61% 83%, 50% 100%, 39% 83%, 20% 90%, 17% 73%, 0% 65%, 10% 50%, 0% 34%, 17% 27%, 20% 9%, 39% 16%)' 
-                    }}
-                  ></div>
+                  <motion.div
+                    animate={{ scale: index === 0 ? 1 : 0 }}
+                    className="absolute -right-4 -bottom-4 md:-right-8 md:-bottom-6 lg:-right-10 lg:-bottom-8 xl:-right-12 xl:-bottom-10 w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48 flex items-center justify-center origin-center drop-shadow-lg z-20"
+                  >
+                    <div 
+                      className="absolute inset-0 bg-[#444] animate-pulse" 
+                      style={{ 
+                        clipPath: 'polygon(50% 0%, 61% 16%, 80% 9%, 83% 27%, 100% 34%, 90% 50%, 100% 65%, 83% 73%, 80% 90%, 61% 83%, 50% 100%, 39% 83%, 20% 90%, 17% 73%, 0% 65%, 10% 50%, 0% 34%, 17% 27%, 20% 9%, 39% 16%)' 
+                      }}
+                    ></div>
+                  </motion.div>
                 </div>
-              </div>
 
-              {/* Text Skeleton */}
-              <div className="mt-auto flex flex-col">
-                <div className="h-8 md:h-10 lg:h-12 bg-[#444] animate-pulse rounded w-3/4 mb-2"></div>
-                <div className="h-5 md:h-6 lg:h-8 bg-[#333] animate-pulse rounded w-1/2 mt-1 md:mt-2"></div>
-              </div>
-              
-            </div>
-          ))
-        ) : (
-          cards.map((card, index) => (
-            <div
+                <div className="mt-auto flex flex-col">
+                  <div className="h-8 md:h-10 lg:h-12 bg-[#444] animate-pulse rounded w-3/4 mb-2"></div>
+                  <div className="h-5 md:h-6 lg:h-8 bg-[#333] animate-pulse rounded w-1/2 mt-1 md:mt-2"></div>
+                </div>
+                
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {!isLoading && cards.map((card, index) => (
+            <motion.div
               key={card.id}
-              className={`absolute top-0 left-0 w-full h-full rounded-[2rem] p-5 md:p-8 lg:p-10 shadow-2xl transition-all duration-500 ease-in-out flex flex-col ${getPositionalClasses(index)}`}
+              initial={{ 
+                opacity: 0, 
+                scale: 0.6, 
+                y: 50, 
+                x: index === 0 ? "0%" : index === 1 ? "15%" : "30%" 
+              }}
+              animate={getCardAnimation(index, isAnimating)}
+              exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="absolute top-0 left-0 w-full h-full rounded-[2rem] p-5 md:p-8 lg:p-10 shadow-2xl flex flex-col"
               style={{ backgroundColor: card.bgColor }}
             >
               
@@ -165,10 +201,10 @@ export default function Offers() {
                   )}
                 </div>
 
-                <div
-                  className={`absolute -right-4 -bottom-4 md:-right-8 md:-bottom-6 lg:-right-10 lg:-bottom-8 xl:-right-12 xl:-bottom-10 w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48 flex items-center justify-center transition-transform duration-500 origin-center drop-shadow-lg z-20 ${
-                    (index === 0 && !isAnimating) || (index === 1 && isAnimating) ? 'scale-100' : 'scale-0'
-                  }`}
+                <motion.div
+                  animate={{ scale: (index === 0 && !isAnimating) || (index === 1 && isAnimating) ? 1 : 0 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="absolute -right-4 -bottom-4 md:-right-8 md:-bottom-6 lg:-right-10 lg:-bottom-8 xl:-right-12 xl:-bottom-10 w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48 flex items-center justify-center origin-center drop-shadow-lg z-20"
                 >
                   <div 
                     className="absolute inset-0" 
@@ -178,8 +214,10 @@ export default function Offers() {
                     }}
                   ></div>
                   
-                  <span className="relative z-10 text-black font-extrabold text-xl md:text-3xl lg:text-4xl xl:text-5xl tracking-tight">{card.discount}</span>
-                </div>
+                  <span className="relative z-10 text-black font-extrabold text-xl md:text-3xl lg:text-4xl xl:text-5xl tracking-tight">
+                    {card.discount}
+                  </span>
+                </motion.div>
                 
               </div>
 
@@ -188,9 +226,9 @@ export default function Offers() {
                 <span className="text-gray-300 font-medium text-base md:text-lg lg:text-xl xl:text-2xl mt-1 md:mt-2 line-clamp-1">{card.desc}</span>
               </div>
               
-            </div>
-          ))
-        )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
       
     </section>

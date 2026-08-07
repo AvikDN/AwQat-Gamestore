@@ -1,11 +1,27 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import apiClient from '../../services/api-client';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 100, damping: 15 },
+  },
+};
 
 export default function Reviews() {
   const [reviews, setReviews] = useState([]);
-  const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const sectionRef = useRef(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -19,28 +35,6 @@ export default function Reviews() {
         console.error("Error fetching reviews:", error);
         setIsLoading(false);
       });
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      {
-        rootMargin: '0px 0px -20% 0px',
-        threshold: 0.1
-      }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
   }, []);
 
   // Helper function to render stars based on the rating number
@@ -73,31 +67,34 @@ export default function Reviews() {
   };
 
   return (
-    <section ref={sectionRef} className="w-full max-w-[1920px] mx-auto py-12 md:py-20 px-4 md:px-8 xl:px-12 overflow-hidden">
+    <section className="w-full max-w-[1920px] mx-auto py-12 md:py-20 px-4 md:px-8 xl:px-12 overflow-visible">
       
-      <style>
-        {`
-          .slide-up-physical {
-            transform: translateY(150px);
-            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-          }
-          .slide-up-physical.in-view {
-            transform: translateY(0);
-          }
-        `}
-      </style>
-
       <div className="flex flex-col mb-8 md:mb-12">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">Recent Reviews</h2>
+        <motion.h2 
+          className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          Recent Reviews
+        </motion.h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 xl:gap-8">
+      <motion.div 
+        key={isLoading ? 'loading' : 'loaded'}
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 xl:gap-8"
+      >
         {isLoading 
           ? [...Array(4)].map((_, index) => (
-              <div
+              <motion.div
                 key={`skeleton-${index}`}
-                className={`flex flex-col slide-up-physical ${isVisible ? 'in-view' : ''}`}
-                style={{ transitionDelay: `${(index % 4) * 100}ms` }}
+                variants={itemVariants}
+                className="flex flex-col"
               >
                 <div className="animate-pulse flex flex-col h-full bg-[#1a1a1a] border border-[#333] rounded-2xl md:rounded-[2rem] p-6 sm:p-8">
                   <div className="flex items-center gap-4 mb-6">
@@ -110,13 +107,14 @@ export default function Reviews() {
                   <div className="h-20 bg-[#333] rounded w-full mb-4"></div>
                   <div className="mt-auto h-4 bg-[#222] rounded w-20"></div>
                 </div>
-              </div>
+              </motion.div>
             ))
-          : reviews.map((review, index) => (
-              <div
+          : reviews.map((review) => (
+              <motion.div
                 key={review.id}
-                className={`flex flex-col slide-up-physical ${isVisible ? 'in-view' : ''}`}
-                style={{ transitionDelay: `${(index % 4) * 100}ms` }}
+                variants={itemVariants}
+                whileHover={{ y: -8 }}
+                className="flex flex-col h-full"
               >
                 <div className="flex flex-col h-full bg-[#1a1a1a] border border-[#333] hover:border-[#2ecc71]/50 rounded-2xl md:rounded-[2rem] p-6 sm:p-8 transition-colors duration-300 shadow-xl group">
                   
@@ -143,10 +141,10 @@ export default function Reviews() {
                   </div>
                   
                 </div>
-              </div>
+              </motion.div>
             ))
         }
-      </div>
+      </motion.div>
     </section>
   );
 }

@@ -14,7 +14,7 @@ const Home = () => {
         >
             
             <main className="relative z-10 w-full pt-32 pb-16 flex flex-col items-center justify-center">
-                {/* <Upcoming /> */}
+                <Upcoming />
                 
                 <div className="mt-8 flex items-center justify-between w-full max-w-100 bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 shadow-lg">
                     <input 

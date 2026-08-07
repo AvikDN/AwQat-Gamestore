@@ -1,37 +1,48 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import apiClient from '../../services/api-client';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 50 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 100, damping: 15 },
+  },
+};
 
 export default function FeaturedProducts() {
   const [products, setProducts] = useState([]);
-  const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
-  // New states to handle dynamic row limits
   const [showAll, setShowAll] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(10); // Default to 2 rows on XL screens (5 cols * 2)
-  
-  const sectionRef = useRef(null);
+  const [visibleCount, setVisibleCount] = useState(10); 
 
-  // Dynamically calculate how many items constitute 2 rows based on Tailwind breakpoints
   useEffect(() => {
     const calculateVisibleItems = () => {
       const width = window.innerWidth;
       if (width >= 1280) {
-        setVisibleCount(10); // xl: 5 columns * 2 rows
+        setVisibleCount(10); 
       } else if (width >= 1024) {
-        setVisibleCount(8);  // lg: 4 columns * 2 rows
+        setVisibleCount(8);  
       } else if (width >= 768) {
-        setVisibleCount(6);  // md: 3 columns * 2 rows
+        setVisibleCount(6);  
       } else {
-        setVisibleCount(4);  // mobile: 2 columns * 2 rows
+        setVisibleCount(4);  
       }
     };
 
-    // Run once on mount
     calculateVisibleItems();
 
-    // Listen for window resizes to adjust the layout dynamically
     window.addEventListener('resize', calculateVisibleItems);
     return () => window.removeEventListener('resize', calculateVisibleItems);
   }, []);
@@ -48,60 +59,49 @@ export default function FeaturedProducts() {
         console.error("Error fetching featured products:", error);
         setIsLoading(false);
       });
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      {
-        rootMargin: '0px 0px -20% 0px',
-        threshold: 0.1
-      }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
   }, []);
 
-  // Determine which products to display based on the toggle state
   const displayedProducts = showAll ? products : products.slice(0, visibleCount);
 
   return (
-    <section ref={sectionRef} className="w-full max-w-[1920px] mx-auto py-12 md:py-20 px-4 md:px-8 xl:px-12 overflow-hidden">
+    <section className="w-full max-w-[1920px] mx-auto py-12 md:py-20 px-4 md:px-8 xl:px-12 overflow-visible">
       
-      <style>
-        {`
-          .slide-up-physical {
-            transform: translateY(150px);
-            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-          }
-          .slide-up-physical.in-view {
-            transform: translateY(0);
-          }
-        `}
-      </style>
-
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 md:mb-12 gap-4">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">Featured Products</h2>
-        <Link to="/products" className="text-white font-bold hover:text-[#2ecc71] transition-colors text-lg md:text-xl">See All</Link>
+        <motion.h2 
+          className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          Featured Products
+        </motion.h2>
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <Link to="/products" className="text-white font-bold hover:text-[#2ecc71] transition-colors text-lg md:text-xl">
+            See All
+          </Link>
+        </motion.div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 xl:gap-8">
+      <motion.div 
+        key={isLoading ? 'loading' : `loaded-${showAll}`}
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 xl:gap-8"
+      >
         {isLoading 
           ? [...Array(visibleCount)].map((_, index) => (
-              <div
+              <motion.div
                 key={`skeleton-${index}`}
-                className={`flex flex-col slide-up-physical ${isVisible ? 'in-view' : ''}`}
-                style={{ transitionDelay: `${(index % 5) * 100}ms` }}
+                variants={itemVariants}
+                className="flex flex-col"
               >
                 <div className="animate-pulse flex flex-col h-full">
                   <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] mb-4 sm:mb-6 bg-[#333]"></div>
@@ -111,18 +111,18 @@ export default function FeaturedProducts() {
                   </div>
                   <div className="mt-auto w-full h-[48px] sm:h-[60px] md:h-[72px] bg-[#333] rounded-xl md:rounded-2xl"></div>
                 </div>
-              </div>
+              </motion.div>
             ))
-          : displayedProducts.map((product, index) => {
+          : displayedProducts.map((product) => {
               const imageUrl = product.images && product.images.length > 0 ? product.images[0].image : null;
 
               return (
-                <div
+                <motion.div
                   key={product.id}
-                  className={`flex flex-col slide-up-physical ${isVisible ? 'in-view' : ''}`}
-                  style={{ transitionDelay: `${(index % 5) * 100}ms` }}
+                  variants={itemVariants}
+                  whileHover={{ y: -8 }}
+                  className="flex flex-col"
                 >
-                  
                   <Link to={`/product/${product.id}`} className="block group cursor-pointer flex-grow">
                     
                     <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] flex items-center justify-center mb-4 sm:mb-6 bg-white/5 overflow-hidden border border-transparent group-hover:border-[#2ecc71]/30 transition-colors duration-300">
@@ -156,22 +156,28 @@ export default function FeaturedProducts() {
                     </svg>
                   </button>
                   
-                </div>
+                </motion.div>
               );
             })
         }
-      </div>
+      </motion.div>
 
-      {/* Conditionally render the See More button if there are hidden products */}
       {!isLoading && !showAll && products.length > visibleCount && (
-        <div className="flex justify-center mt-10 md:mt-16 w-full">
-          <button
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="flex justify-center mt-10 md:mt-16 w-full"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowAll(true)}
-            className="px-8 py-3 bg-transparent border-2 border-[#2ecc71] text-[#2ecc71] font-bold text-lg md:text-xl rounded-full hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.8)] transition-all duration-300"
+            className="px-8 py-3 bg-transparent border-2 border-[#2ecc71] text-[#2ecc71] font-bold text-lg md:text-xl rounded-full hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.8)] transition-colors duration-300"
           >
             See More
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       )}
 
     </section>
