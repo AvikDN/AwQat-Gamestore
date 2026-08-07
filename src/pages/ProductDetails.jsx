@@ -104,7 +104,16 @@ export default function ProductDetails() {
     );
   }
 
-  const totalPrice = Number(product.price) * quantity;
+  const originalPrice = Number(product.price);
+  const discountValue = Number(product.discount || 0);
+  const hasDiscount = discountValue > 0;
+  
+  const unitFinalPrice = hasDiscount 
+    ? (discountValue <= 100 ? originalPrice - (originalPrice * discountValue) / 100 : originalPrice - discountValue) 
+    : originalPrice;
+
+  const totalOriginalPrice = originalPrice * quantity;
+  const totalPrice = unitFinalPrice * quantity;
 
   return (
     <div className="bg-black min-h-screen w-full text-white selection:bg-[#2ecc71] selection:text-black">
@@ -125,6 +134,12 @@ export default function ProductDetails() {
             
             {/* Main Media Block */}
             <motion.div variants={itemVariants} className="w-full aspect-video bg-[#1a1a1a] rounded-xl overflow-hidden flex items-center justify-center shadow-xl border border-transparent hover:border-[#2ecc71]/30 transition-colors relative">
+              {hasDiscount && (
+                <div className="absolute top-4 right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-sm sm:text-base px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(46,204,113,0.6)]">
+                  Sale
+                </div>
+              )}
+
               <AnimatePresence mode="wait">
                 {activeMedia.type === 'video' && activeMedia.url ? (
                   <motion.video 
@@ -272,9 +287,23 @@ export default function ProductDetails() {
 
               <span className="text-xl font-bold mb-1 text-gray-400 relative z-10">Purchase Panel</span>
               
-              <span className="text-4xl md:text-5xl font-black tracking-tight mb-6 text-[#2ecc71] relative z-10">
-                {totalPrice} BDT
-              </span>
+              <div className="flex items-baseline gap-3 mb-6 relative z-10">
+                <span className="text-sm font-bold text-gray-400">Price:</span>
+                {hasDiscount ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-gray-400 line-through text-2xl md:text-3xl font-bold">
+                      {totalOriginalPrice}
+                    </span>
+                    <span className="text-4xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
+                      {totalPrice.toFixed(0)} BDT
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-4xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
+                    {totalOriginalPrice} BDT
+                  </span>
+                )}
+              </div>
               
               <span className="text-sm font-bold mb-2 text-gray-400 relative z-10">Supported Platforms</span>
               <div className="flex mb-6 relative z-10">

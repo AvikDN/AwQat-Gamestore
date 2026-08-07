@@ -106,7 +106,7 @@ export default function FeaturedProducts() {
                 <div className="animate-pulse flex flex-col h-full">
                   <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] mb-4 sm:mb-6 bg-[#333]"></div>
                   <div className="flex flex-col px-1 sm:px-2 mb-4 sm:mb-6">
-                    <div className="h-5 sm:h-8 bg-[#444] rounded w-3/4 mb-2 sm:mb-3"></div>
+                    <div className="h-5 sm:h-7 bg-[#444] rounded w-3/4 mb-2 sm:mb-3"></div>
                     <div className="h-4 sm:h-6 bg-[#222] rounded w-1/2"></div>
                   </div>
                   <div className="mt-auto w-full h-[48px] sm:h-[60px] md:h-[72px] bg-[#333] rounded-xl md:rounded-2xl"></div>
@@ -115,6 +115,14 @@ export default function FeaturedProducts() {
             ))
           : displayedProducts.map((product) => {
               const imageUrl = product.images && product.images.length > 0 ? product.images[0].image : null;
+              
+              const originalPrice = Number(product.price);
+              const discountValue = Number(product.discount || 0);
+              const hasDiscount = discountValue > 0;
+              
+              const finalPrice = hasDiscount 
+                ? (discountValue <= 100 ? originalPrice - (originalPrice * discountValue) / 100 : originalPrice - discountValue) 
+                : originalPrice;
 
               return (
                 <motion.div
@@ -126,6 +134,12 @@ export default function FeaturedProducts() {
                   <Link to={`/product/${product.id}`} className="block group cursor-pointer flex-grow">
                     
                     <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] flex items-center justify-center mb-4 sm:mb-6 bg-white/5 overflow-hidden border border-transparent group-hover:border-[#2ecc71]/30 transition-colors duration-300">
+                        {hasDiscount && (
+                          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full shadow-[0_0_10px_rgba(46,204,113,0.5)]">
+                            Sale
+                          </div>
+                        )}
+
                         {imageUrl ? (
                           <img 
                             src={imageUrl} 
@@ -144,8 +158,17 @@ export default function FeaturedProducts() {
                     </div>
 
                     <div className="flex flex-col px-1 sm:px-2 mb-4 sm:mb-6">
-                      <span className="font-extrabold text-white text-lg sm:text-2xl md:text-3xl mb-1 group-hover:text-[#2ecc71] transition-colors line-clamp-1">{product.title}</span>
-                      <span className="text-gray-300 font-bold text-base sm:text-lg md:text-xl">{Number(product.price)} BDT</span>
+                      <span className="font-extrabold text-white text-base sm:text-lg md:text-xl mb-1 group-hover:text-[#2ecc71] transition-colors line-clamp-1">{product.title}</span>
+                      
+                      {hasDiscount ? (
+                        <div className="flex items-center flex-wrap gap-x-2 text-sm sm:text-base md:text-lg">
+                          <span className="text-gray-400 font-bold">Price:</span>
+                          <span className="text-gray-400 line-through font-bold">{originalPrice}</span>
+                          <span className="text-white font-extrabold">{finalPrice.toFixed(0)} BDT</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 font-bold text-sm sm:text-base md:text-lg">{originalPrice} BDT</span>
+                      )}
                     </div>
 
                   </Link>
