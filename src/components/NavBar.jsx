@@ -63,7 +63,7 @@ export default function Nav() {
         <NavLink 
           to="/" 
           className={({ isActive }) => 
-            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] drop-shadow-[0_0_8px_rgba(46,204,113,0.8)]' : 'text-white hover:text-gray-300'}`
+            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] ' : 'text-white hover:text-gray-300'}`
           }
         >
           Home
@@ -72,7 +72,7 @@ export default function Nav() {
         <NavLink 
           to="/products" 
           className={({ isActive }) => 
-            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] drop-shadow-[0_0_8px_rgba(46,204,113,0.8)]' : 'text-white hover:text-gray-300'}`
+            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] ' : 'text-white hover:text-gray-300'}`
           }
         >
           Products
@@ -81,7 +81,7 @@ export default function Nav() {
         <NavLink 
           to="/contact" 
           className={({ isActive }) => 
-            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] drop-shadow-[0_0_8px_rgba(46,204,113,0.8)]' : 'text-white hover:text-gray-300'}`
+            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] ' : 'text-white hover:text-gray-300'}`
           }
         >
           Contact

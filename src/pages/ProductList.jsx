@@ -16,36 +16,66 @@ export default function ProductList() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
 
+  const [sortOrder, setSortOrder] = useState('default');
   const [searchTerm, setSearchTerm] = useState('');
-  const [priceLimit, setPriceLimit] = useState(3000);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(3000);
   const [selectedStudio, setSelectedStudio] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedPlatform, setSelectedPlatform] = useState('All');
-  const [selectedMode, setSelectedMode] = useState('All');
+  const [selectedAvailability, setSelectedAvailability] = useState('All');
 
+  // Updated raw data with discountPrice for Sale items
   const allProducts = [
-    { id: 1, title: 'GTA 5', price: 1500, image: GTA5Img, studio: 'Rockstar', category: 'Action', platform: 'PC', mode: 'Multiplayer' },
-    { id: 2, title: 'Red dead redemption 2', price: 2000, image: RDR2Img, studio: 'Rockstar', category: 'Action', platform: 'Console', mode: 'Singleplayer' },
-    { id: 3, title: 'Ghost of Tsushima', price: 1400, image: GOTImg, studio: 'Sony', category: 'Action', platform: 'Console', mode: 'Singleplayer' },
-    { id: 4, title: 'Shadow of the Tomb Raider', price: 600, image: SOTRImg, studio: 'Square Enix', category: 'Adventure', platform: 'PC', mode: 'Singleplayer' },
-    { id: 5, title: 'Uncharted Legacy', price: 1600, image: ULImg, studio: 'Sony', category: 'Adventure', platform: 'PC', mode: 'Singleplayer' },
-    { id: 6, title: 'FC 26', price: 1200, image: FC26Img, studio: 'EA', category: 'Sports', platform: 'Console', mode: 'Multiplayer' },
-    { id: 7, title: 'Forza Horizon 6', price: 1800, image: FH6Img, studio: 'Microsoft', category: 'Racing', platform: 'PC', mode: 'Multiplayer' },
-    { id: 8, title: 'Call Of Duty: MW2', price: 1600, image: CODmw2Img, studio: 'Activision', category: 'Shooter', platform: 'PC', mode: 'Multiplayer' },
-    { id: 9, title: 'AC black flag resynced', price: 1800, image: ACBfrImg, studio: 'Ubisoft', category: 'Action', platform: 'Console', mode: 'Singleplayer' },
-    { id: 10, title: 'Resident Evil 9:Requiem', price: 1400, image: RE9Img, studio: 'Capcom', category: 'Horror', platform: 'PC', mode: 'Singleplayer' },
+    { id: 1, title: 'GTA 5', price: 1500, discountPrice: 1200, image: GTA5Img, studio: 'Rockstar', category: 'Action', availability: 'Available', isDiscounted: true },
+    { id: 2, title: 'Red dead redemption 2', price: 2000, image: RDR2Img, studio: 'Rockstar', category: 'Action', availability: 'Available', isDiscounted: false },
+    { id: 3, title: 'Ghost of Tsushima', price: 1400, discountPrice: 1100, image: GOTImg, studio: 'Sony', category: 'Action', availability: 'Available', isDiscounted: true },
+    { id: 4, title: 'Shadow of the Tomb Raider', price: 600, discountPrice: 450, image: SOTRImg, studio: 'Square Enix', category: 'Adventure', availability: 'Available', isDiscounted: true },
+    { id: 5, title: 'Uncharted Legacy', price: 1600, image: ULImg, studio: 'Sony', category: 'Adventure', availability: 'Available', isDiscounted: false },
+    { id: 6, title: 'FC 26', price: 1200, image: FC26Img, studio: 'EA', category: 'Sports', availability: 'Available', isDiscounted: false },
+    { id: 7, title: 'Forza Horizon 6', price: 1800, image: FH6Img, studio: 'Microsoft', category: 'Racing', availability: 'Coming soon', isDiscounted: false },
+    { id: 8, title: 'Call Of Duty: MW2', price: 1600, image: CODmw2Img, studio: 'Activision', category: 'Shooter', availability: 'Available', isDiscounted: false },
+    { id: 9, title: 'AC black flag resynced', price: 1800, image: ACBfrImg, studio: 'Ubisoft', category: 'Action', availability: 'Coming soon', isDiscounted: false },
+    { id: 10, title: 'Resident Evil 9:Requiem', price: 1400, image: RE9Img, studio: 'Capcom', category: 'Horror', availability: 'Coming soon', isDiscounted: false },
   ];
 
-  const filteredProducts = allProducts.filter(product => {
+  let processedProducts = allProducts.filter(product => {
+    const currentPrice = product.isDiscounted ? product.discountPrice : product.price;
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPrice = product.price <= priceLimit;
+    const matchesPrice = currentPrice >= minPrice && currentPrice <= maxPrice;
     const matchesStudio = selectedStudio === 'All' || product.studio === selectedStudio;
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    const matchesPlatform = selectedPlatform === 'All' || product.platform === selectedPlatform;
-    const matchesMode = selectedMode === 'All' || product.mode === selectedMode;
+    const matchesAvailability = selectedAvailability === 'All' || product.availability === selectedAvailability;
 
-    return matchesSearch && matchesPrice && matchesStudio && matchesCategory && matchesPlatform && matchesMode;
+    return matchesSearch && matchesPrice && matchesStudio && matchesCategory && matchesAvailability;
   });
+
+  if (sortOrder === 'low-to-high') {
+    processedProducts.sort((a, b) => (a.isDiscounted ? a.discountPrice : a.price) - (b.isDiscounted ? b.discountPrice : b.price));
+  } else if (sortOrder === 'high-to-low') {
+    processedProducts.sort((a, b) => (b.isDiscounted ? b.discountPrice : b.price) - (a.isDiscounted ? a.discountPrice : a.price));
+  } else if (sortOrder === 'discounted') {
+    processedProducts.sort((a, b) => (a.isDiscounted === b.isDiscounted ? 0 : a.isDiscounted ? -1 : 1));
+  }
+
+  const handleResetFilters = () => {
+    setSortOrder('default');
+    setSearchTerm('');
+    setMinPrice(0);
+    setMaxPrice(3000);
+    setSelectedStudio('All');
+    setSelectedCategory('All');
+    setSelectedAvailability('All');
+  };
+
+  const handleMinChange = (e) => {
+    const value = Math.min(Number(e.target.value), maxPrice - 100);
+    setMinPrice(value);
+  };
+
+  const handleMaxChange = (e) => {
+    const value = Math.max(Number(e.target.value), minPrice + 100);
+    setMaxPrice(value);
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -83,142 +113,177 @@ export default function ProductList() {
           .slide-up-physical.in-view {
             transform: translateY(0);
           }
-          input[type=range]::-webkit-slider-thumb {
+          input[type="number"]::-webkit-inner-spin-button,
+          input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+          input[type="number"] {
+            -moz-appearance: textfield;
+          }
+          /* Custom dual slider */
+          .dual-range::-webkit-slider-thumb {
+            pointer-events: auto;
             -webkit-appearance: none;
             height: 20px;
             width: 20px;
             border-radius: 50%;
-            background: #ffffff;
+            background: #2ecc71;
             cursor: pointer;
-            margin-top: -8px;
-          }
-          input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: #404040;
-            border-radius: 2px;
           }
         `}
       </style>
 
-      {/* items-start guarantees the sidebar and product grid align perfectly at the top */}
       <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start">
         
-        {/* SIDEBAR */}
-        <aside className="w-full lg:w-[280px] xl:w-[320px] bg-[#1a1a1a] rounded-[2rem] p-6 sm:p-8 flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-8 mt-0">
-          <h2 className="text-2xl xl:text-3xl font-bold text-white tracking-tight">Filters</h2>
+        <aside className="w-full lg:w-[280px] xl:w-[320px] flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-8 mt-0">
           
-          <div className="relative">
-            <input 
-              type="text" 
-              placeholder="Search" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#333333] text-white rounded-full py-3 pl-5 pr-12 outline-none focus:ring-2 focus:ring-[#b0b0b0] transition-shadow placeholder-gray-400"
-            />
-            <svg className="absolute right-4 top-3.5 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-          </div>
-
-          <div className="flex flex-col gap-4 mt-2">
-            <div className="flex items-center justify-between">
-              <span className="bg-[#333333] text-gray-300 font-bold px-4 py-1.5 rounded-lg text-xs xl:text-sm">Price-Range</span>
-              <span className="bg-white text-black font-bold px-3 py-1.5 rounded-lg text-xs xl:text-sm">{priceLimit}</span>
+          {/* Box 1: Sort By */}
+          <div className="w-full bg-[#1a1a1a] rounded-[2rem] p-6 sm:p-8 flex flex-col gap-4">
+            <span className="text-xl font-bold text-[#ffffff] tracking-tight">Sort By:</span>
+            <div className="relative">
+              <select 
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base border border-[#404040]"
+              >
+                <option value="default">Default</option>
+                <option value="low-to-high">Low to High</option>
+                <option value="high-to-low">High to Low</option>
+                <option value="discounted">Discounted</option>
+              </select>
+              <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-[#ffffff] pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
+              </svg>
             </div>
-            <input 
-              type="range" 
-              min="0" 
-              max="3000" 
-              step="100"
-              value={priceLimit}
-              onChange={(e) => setPriceLimit(Number(e.target.value))}
-              className="w-full appearance-none bg-transparent"
-            />
-            <div className="w-full h-0.5 bg-[#333333] my-2"></div>
           </div>
 
-          <div className="flex flex-col gap-4">
+          {/* Box 2: Filters */}
+          <div className="w-full bg-[#1a1a1a] rounded-[2rem] p-6 sm:p-8 flex flex-col gap-6">
+            <h2 className="text-2xl xl:text-3xl font-bold text-white tracking-tight">Filters</h2>
             
             <div className="relative">
-              <select 
-                value={selectedStudio}
-                onChange={(e) => setSelectedStudio(e.target.value)}
-                className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
-              >
-                <option value="All">Studio</option>
-                <option value="Rockstar">Rockstar</option>
-                <option value="Sony">Sony</option>
-                <option value="Square Enix">Square Enix</option>
-                <option value="EA">EA</option>
-                <option value="Activision">Activision</option>
-                <option value="Ubisoft">Ubisoft</option>
-                <option value="Capcom">Capcom</option>
-              </select>
-              <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
+              <input 
+                type="text" 
+                placeholder="Search" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#333333] text-white rounded-full py-3 pl-5 pr-12 outline-none focus:ring-2 focus:ring-[#b0b0b0] transition-shadow placeholder-gray-400"
+              />
+              <svg className="absolute right-4 top-3.5 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </div>
 
-            <div className="relative">
-              <select 
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
-              >
-                <option value="All">Category</option>
-                <option value="Action">Action</option>
-                <option value="Adventure">Adventure</option>
-                <option value="Shooter">Shooter</option>
-                <option value="Sports">Sports</option>
-                <option value="Racing">Racing</option>
-                <option value="Horror">Horror</option>
-              </select>
-              <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
-              </svg>
+            <div className="flex flex-col gap-4 mt-2">
+              <span className="bg-[#333333] text-gray-300 font-bold px-4 py-1.5 rounded-lg text-xs xl:text-sm self-start">Price-Range</span>
+              
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  value={minPrice}
+                  onChange={handleMinChange}
+                  className="w-full bg-[#333333] text-white font-bold rounded-lg py-2 px-3 text-center outline-none focus:ring-2 focus:ring-[#b0b0b0]"
+                />
+                <span className="text-white font-bold">-</span>
+                <input 
+                  type="number" 
+                  value={maxPrice}
+                  onChange={handleMaxChange}
+                  className="w-full bg-[#333333] text-white font-bold rounded-lg py-2 px-3 text-center outline-none focus:ring-2 focus:ring-[#b0b0b0]"
+                />
+              </div>
+
+              {/* Dual Range Slider */}
+              <div className="relative h-6 w-full mt-2">
+                <div className="absolute top-1/2 left-0 w-full h-1 bg-[#333333] -translate-y-1/2 rounded-full"></div>
+                <div 
+                  className="absolute top-1/2 h-1 bg-[#2ecc71] -translate-y-1/2 rounded-full pointer-events-none"
+                  style={{ left: `${(minPrice / 3000) * 100}%`, right: `${100 - (maxPrice / 3000) * 100}%` }}
+                ></div>
+                <input 
+                  type="range" min="0" max="3000" step="100" value={minPrice} onChange={handleMinChange} 
+                  className="absolute top-0 left-0 w-full h-full appearance-none bg-transparent pointer-events-none dual-range" 
+                />
+                <input 
+                  type="range" min="0" max="3000" step="100" value={maxPrice} onChange={handleMaxChange} 
+                  className="absolute top-0 left-0 w-full h-full appearance-none bg-transparent pointer-events-none dual-range" 
+                />
+              </div>
             </div>
 
-            <div className="relative">
-              <select 
-                value={selectedPlatform}
-                onChange={(e) => setSelectedPlatform(e.target.value)}
-                className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
-              >
-                <option value="All">Platform</option>
-                <option value="PC">PC</option>
-                <option value="Console">Console</option>
-              </select>
-              <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </div>
+            <div className="flex flex-col gap-4">
+              <div className="relative">
+                <select 
+                  value={selectedStudio}
+                  onChange={(e) => setSelectedStudio(e.target.value)}
+                  className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
+                >
+                  <option value="All">Studio</option>
+                  <option value="Rockstar">Rockstar</option>
+                  <option value="Sony">Sony</option>
+                  <option value="Square Enix">Square Enix</option>
+                  <option value="EA">EA</option>
+                  <option value="Activision">Activision</option>
+                  <option value="Ubisoft">Ubisoft</option>
+                  <option value="Capcom">Capcom</option>
+                </select>
+                <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
 
-            <div className="relative">
-              <select 
-                value={selectedMode}
-                onChange={(e) => setSelectedMode(e.target.value)}
-                className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
-              >
-                <option value="All">Mode</option>
-                <option value="Singleplayer">Singleplayer</option>
-                <option value="Multiplayer">Multiplayer</option>
-              </select>
-              <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
-              </svg>
-            </div>
+              <div className="relative">
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
+                >
+                  <option value="All">Category</option>
+                  <option value="Action">Action</option>
+                  <option value="Adventure">Adventure</option>
+                  <option value="Shooter">Shooter</option>
+                  <option value="Sports">Sports</option>
+                  <option value="Racing">Racing</option>
+                  <option value="Horror">Horror</option>
+                </select>
+                <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
 
+              <div className="relative">
+                <select 
+                  value={selectedAvailability}
+                  onChange={(e) => setSelectedAvailability(e.target.value)}
+                  className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
+                >
+                  <option value="All">Availability</option>
+                  <option value="Available">Available</option>
+                  <option value="Coming soon">Coming soon</option>
+                </select>
+                <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+              
+              <button 
+                onClick={handleResetFilters}
+                className="mt-4 w-full py-4 bg-[#b0b0b0] hover:bg-white text-black font-extrabold rounded-xl transition-colors text-sm xl:text-base"
+              >
+                Reset Filters
+              </button>
+
+            </div>
           </div>
         </aside>
 
-        {/* MAIN PRODUCT GRID - Responsive columns (2 on mobile, 3 on tablet, 4 on PC) */}
+        {/* MAIN PRODUCT GRID */}
         <div className="flex-1 w-full mt-0">
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 xl:gap-8">
             
-            {filteredProducts.length > 0 ? (
-              filteredProducts.map((product, index) => (
+            {processedProducts.length > 0 ? (
+              processedProducts.map((product, index) => (
                 <div
                   key={product.id}
                   className={`flex flex-col slide-up-physical ${isVisible ? 'in-view' : ''}`}
@@ -239,17 +304,40 @@ export default function ProductList() {
                             No Image
                           </div>
                         )}
+                        
+                        {/* Dynamic Tags */}
+                        {product.isDiscounted && (
+                          <div className="absolute top-4 right-4 bg-[#2ecc71] text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10">
+                            Sale
+                          </div>
+                        )}
+                        {product.availability === 'Coming soon' && (
+                          <div className="absolute top-4 right-4 bg-cyan-400 text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10">
+                            Upcoming
+                          </div>
+                        )}
                     </div>
 
                     <div className="flex flex-col mb-4">
                       <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-gray-300 transition-colors truncate">{product.title}</span>
-                      <span className="text-gray-300 font-bold text-sm md:text-base">Price: {product.price} BDT</span>
+                      
+                     {/* Price Logic */}
+                      {product.isDiscounted ? (
+                        <div className="flex items-center gap-2 text-sm md:text-base">
+                          <span className="text-gray-300 font-bold">
+                            Price: <span className="text-gray-500 line-through">{product.price}</span>
+                          </span>
+                          <span className="text-white font-bold">{product.discountPrice} BDT</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 font-bold text-sm md:text-base">Price: {product.price} BDT</span>
+                      )}
                     </div>
 
                   </Link>
 
-                 <button className="mt-auto w-full py-3 sm:py-4 md:py-5 bg-[#b0b0b0] hover:bg-[#2ecc71] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 rounded-xl md:rounded-2xl flex items-center justify-center group">
-                    <svg className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 text-black group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <button className="mt-auto w-full py-3.5 bg-[#b0b0b0] hover:bg-[#2ecc71] transition-colors rounded-xl flex items-center justify-center shadow-sm">
+                    <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                   </button>

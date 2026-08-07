@@ -18,7 +18,7 @@ const itemVariants = {
   },
 };
 
-export default function PrivacyPolicy() {
+export default function PnP() {
   const lastUpdated = "August 7, 2026";
 
   const policySections = [

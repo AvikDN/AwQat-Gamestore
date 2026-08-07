@@ -6,7 +6,7 @@ import ProductList from "../pages/ProductList";
 import FAQ from "../pages/FAQ";
 import About from "../pages/AboutUs";
 import Contact from "../pages/Contact";
-import PnP from "../pages/PrivacyPolicy";
+import PnP from "../pages/PnP";
 import TOS from "../pages/TOS";
 import ScrollToTop from "../components/ScrollToTop";
 import AboutUs from "../pages/AboutUs";

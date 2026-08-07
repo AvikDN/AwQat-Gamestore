@@ -114,7 +114,7 @@ export default function Upcoming() {
                   whileTap={{ scale: 0.95 }}
                   className="bg-[#5c5c5c] text-white px-5 py-2.5 md:px-8 md:py-4 rounded-xl text-sm md:text-lg font-medium w-max hover:bg-gray-700 transition-colors pointer-events-auto shadow-lg"
                 >
-                  Pre-Order Now
+                  Check Details
                 </motion.button>
               </div>
 
