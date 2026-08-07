@@ -178,11 +178,11 @@ export default function ProductDetails() {
             </motion.div>
 
             <motion.div variants={itemVariants} className="mt-10 md:mt-12">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#2ecc71]">Description</h2>
-              
-              <div className="flex flex-col gap-4 text-gray-300 text-base md:text-lg leading-relaxed whitespace-pre-line">
-                  <p>{product.description}</p>
-              </div>
+          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#2ecc71]">Description</h2>
+          
+          <div className="flex flex-col gap-4 text-gray-300 text-base md:text-lg leading-relaxed whitespace-pre-line">
+              <p>From {product.studio_name}, {product.description}</p>
+          </div>
             </motion.div>
           </div>
 
