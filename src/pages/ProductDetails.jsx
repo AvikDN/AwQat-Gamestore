@@ -23,6 +23,7 @@ const itemVariants = {
 export default function ProductDetails() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   
@@ -30,10 +31,15 @@ export default function ProductDetails() {
 
   useEffect(() => {
     setLoading(true);
-    apiClient.get(`/games/${id}/`)
-      .then(response => {
-        const data = response.data;
+    
+    Promise.all([
+      apiClient.get(`/games/${id}/`),
+      apiClient.get(`/games/${id}/reviews/`)
+    ])
+      .then(([productRes, reviewsRes]) => {
+        const data = productRes.data;
         setProduct(data);
+        setReviews(reviewsRes.data.results || []);
         
         if (data.video) {
           setActiveMedia({ type: 'video', url: data.video });
@@ -44,7 +50,7 @@ export default function ProductDetails() {
         setLoading(false);
       })
       .catch(error => {
-        console.error("Error fetching product details:", error);
+        console.error("Error fetching product details or reviews:", error);
         setLoading(false);
       });
   }, [id]);
@@ -59,14 +65,29 @@ export default function ProductDetails() {
 
   if (loading) {
     return (
-      <div className="bg-black min-h-screen w-full flex items-center justify-center">
-        <motion.div 
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          className="text-[#2ecc71] font-bold text-xl drop-shadow-[0_0_10px_rgba(46,204,113,0.8)]"
-        >
-          Loading Details...
-        </motion.div>
+      <div className="bg-black min-h-screen w-full text-white">
+        <div className="max-w-[1400px] mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-pulse">
+            
+            <div className="lg:col-span-7 flex flex-col">
+              <div className="h-12 bg-[#333] rounded-xl w-3/4 mb-6"></div>
+              <div className="w-full aspect-video bg-[#1a1a1a] rounded-xl mb-4"></div>
+              <div className="grid grid-cols-5 gap-4 mb-8">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="aspect-video bg-[#1a1a1a] rounded-lg"></div>
+                ))}
+              </div>
+              <div className="h-8 bg-[#333] rounded w-1/4 mb-4"></div>
+              <div className="h-24 bg-[#1a1a1a] rounded-2xl mb-8"></div>
+            </div>
+
+            <div className="lg:col-span-5 flex flex-col gap-6 lg:mt-17">
+              <div className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-8 h-64"></div>
+              <div className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-8 h-48"></div>
+            </div>
+
+          </div>
+        </div>
       </div>
     );
   }
@@ -138,7 +159,6 @@ export default function ProductDetails() {
             {/* Thumbnails */}
             <motion.div variants={itemVariants} className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-4 mt-2 sm:mt-4">
               
-              {/* Video Thumbnail */}
               {product.video && (
                 <motion.div 
                   whileHover={{ scale: 1.05 }}
@@ -159,7 +179,6 @@ export default function ProductDetails() {
                 </motion.div>
               )}
 
-              {/* Image Thumbnails */}
               {product.images && product.images.map((imgObj) => (
                 <motion.div 
                   key={imgObj.id} 
@@ -177,19 +196,78 @@ export default function ProductDetails() {
               ))}
             </motion.div>
 
-            <motion.div variants={itemVariants} className="mt-10 md:mt-12">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#2ecc71]">Description</h2>
-          
-          <div className="flex flex-col gap-4 text-gray-300 text-base md:text-lg leading-relaxed whitespace-pre-line">
-              <p>From {product.studio_name}, {product.description}</p>
-          </div>
+            {/* Description Section */}
+            <motion.div variants={itemVariants} className="mt-10 md:mt-12 flex flex-col gap-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-[#2ecc71]">Description</h2>
+              
+              {product.studio_name && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 font-bold">Studio:</span>
+                  <span className="bg-[#1a1a1a] border border-[#333] text-white px-3 py-1 rounded-lg text-sm font-semibold">
+                    {product.studio_name}
+                  </span>
+                </div>
+              )}
+
+              <div className="text-gray-300 text-base md:text-lg leading-relaxed whitespace-pre-line">
+                <p>{product.description}</p>
+              </div>
             </motion.div>
+
+            {/* Dynamic Reviews Section */}
+            <motion.div variants={itemVariants} className="mt-10 md:mt-12 w-full">
+              <h2 className="text-2xl md:text-3xl font-bold mb-4 text-[#2ecc71]">Customer Reviews</h2>
+              <div className="flex flex-col gap-4">
+               {reviews.length > 0 ? (
+                 reviews.map((review) => (
+                   <div 
+                     key={review.id} 
+                     className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 flex flex-col gap-4 w-full"
+                   >
+                     <div className="flex items-center gap-4">
+                       
+                       <div className="w-12 h-12 bg-[#2ecc71]/10 border border-[#2ecc71]/20 rounded-full flex items-center justify-center shrink-0">
+                         <span className="text-[#2ecc71] font-bold text-xl uppercase">
+                           {review.user ? review.user.charAt(0) : 'U'}
+                         </span>
+                       </div>
+                       
+                       <div className="flex flex-col">
+                         <span className="text-white font-bold text-xl">
+                           {review.user}
+                         </span>
+                         
+                         <div className="flex items-center gap-1 mt-1">
+                           {[...Array(5)].map((_, i) => (
+                             <svg 
+                               key={i} 
+                               className={`w-5 h-5 ${i < Math.floor(review.rating) ? 'text-[#2ecc71]' : 'text-[#333]'}`} 
+                               viewBox="0 0 20 20" 
+                               fill="currentColor"
+                             >
+                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                             </svg>
+                           ))}
+                         </div>
+                       </div>
+                     </div>
+                     
+                     <p className="text-white font-bold text-lg mt-2">
+                       "{review.text}"
+                     </p>
+                   </div>
+                 ))
+               ) : (
+                 <span className="text-gray-400">No reviews available for this product yet.</span>
+               )}
+              </div>
+            </motion.div>
+            
           </div>
 
           <div className="lg:col-span-5 flex flex-col gap-6 lg:mt-17">
             
             <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-2xl relative overflow-hidden">
-              {/* Subtle background glow */}
               <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#2ecc71]/5 rounded-full blur-3xl pointer-events-none"></div>
 
               <span className="text-xl font-bold mb-1 text-gray-400 relative z-10">Purchase Panel</span>
@@ -245,16 +323,20 @@ export default function ProductDetails() {
               </div>
             </motion.div>
 
+            {/* Dynamic System Requirements */}
             <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-xl">
               <h3 className="text-xl font-bold mb-5 text-[#2ecc71]">System requirement</h3>
               
               <ul className="flex flex-col gap-3 text-sm md:text-base font-medium text-gray-400">
-                  <li><strong className="text-white">OS:</strong> Windows 10 / 11 (64-bit)</li>
-                  <li><strong className="text-white">Processor:</strong> AMD Ryzen 5 3600 / Intel Core i5-10400</li>
-                  <li><strong className="text-white">Memory:</strong> 16 GB RAM</li>
-                  <li><strong className="text-white">Graphics:</strong> Radeon RX 6700 XT / GeForce RTX 3060</li>
-                  <li><strong className="text-white">DirectX:</strong> Version 12</li>
-                  <li><strong className="text-white">Storage:</strong> 60 GB available space</li>
+                {product.system_requirements ? (
+                  Object.entries(product.system_requirements).map(([key, value]) => (
+                    <li key={key}>
+                      <strong className="text-white uppercase">{key}:</strong> {value}
+                    </li>
+                  ))
+                ) : (
+                  <li>No system requirements specified.</li>
+                )}
               </ul>
             </motion.div>
             

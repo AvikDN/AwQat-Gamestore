@@ -58,33 +58,63 @@ export default function Nav() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-4 lg:gap-8 px-6 lg:px-8 py-2 lg:py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-lg z-20"
+        className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center justify-center gap-4 lg:gap-8 px-6 lg:px-8 py-2.5 lg:py-3.5 rounded-full bg-neutral-900/40 backdrop-blur-2xl border border-white/25 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] ring-1 ring-white/10 z-20"
       >
         <NavLink 
           to="/" 
           className={({ isActive }) => 
-            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] ' : 'text-white hover:text-gray-300'}`
+            `relative font-bold transition-colors duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
           }
         >
-          Home
+          {({ isActive }) => (
+            <>
+              Home
+              {isActive && (
+                <motion.div 
+                  layoutId="desktop-nav-underline"
+                  className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                />
+              )}
+            </>
+          )}
         </NavLink>
         
         <NavLink 
           to="/products" 
           className={({ isActive }) => 
-            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] ' : 'text-white hover:text-gray-300'}`
+            `relative font-bold transition-colors duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
           }
         >
-          Products
+          {({ isActive }) => (
+            <>
+              Products
+              {isActive && (
+                <motion.div 
+                  layoutId="desktop-nav-underline"
+                  className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                />
+              )}
+            </>
+          )}
         </NavLink>
         
         <NavLink 
           to="/contact" 
           className={({ isActive }) => 
-            `font-bold transition-all duration-300 ${isActive ? 'text-[#2ecc71] ' : 'text-white hover:text-gray-300'}`
+            `relative font-bold transition-colors duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
           }
         >
-          Contact
+          {({ isActive }) => (
+            <>
+              Contact
+              {isActive && (
+                <motion.div 
+                  layoutId="desktop-nav-underline"
+                  className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                />
+              )}
+            </>
+          )}
         </NavLink>
       </motion.div>
 
@@ -159,10 +189,20 @@ export default function Nav() {
                 to="/" 
                 onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) => 
-                  `font-bold text-xl transition-all duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
+                  `relative font-bold text-xl transition-colors duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
                 }
               >
-                Home
+                {({ isActive }) => (
+                  <>
+                    Home
+                    {isActive && (
+                      <motion.div 
+                        layoutId="mobile-nav-underline"
+                        className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                      />
+                    )}
+                  </>
+                )}
               </NavLink>
             </motion.div>
             
@@ -171,10 +211,20 @@ export default function Nav() {
                 to="/products" 
                 onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) => 
-                  `font-bold text-xl transition-all duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
+                  `relative font-bold text-xl transition-colors duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
                 }
               >
-                Products
+                {({ isActive }) => (
+                  <>
+                    Products
+                    {isActive && (
+                      <motion.div 
+                        layoutId="mobile-nav-underline"
+                        className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                      />
+                    )}
+                  </>
+                )}
               </NavLink>
             </motion.div>
             
@@ -183,10 +233,20 @@ export default function Nav() {
                 to="/contact" 
                 onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) => 
-                  `font-bold text-xl transition-all duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
+                  `relative font-bold text-xl transition-colors duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
                 }
               >
-                Contact
+                {({ isActive }) => (
+                  <>
+                    Contact
+                    {isActive && (
+                      <motion.div 
+                        layoutId="mobile-nav-underline"
+                        className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                      />
+                    )}
+                  </>
+                )}
               </NavLink>
             </motion.div>
           </motion.div>

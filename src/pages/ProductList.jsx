@@ -1,20 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-
-import GTA5Img from '../assets/pics/GamesPic/GTA5.jpg';
-import RDR2Img from '../assets/pics/GamesPic/red-dead 2.jpg';
-import GOTImg from '../assets/pics/GamesPic/GOT.webp';
-import SOTRImg from '../assets/pics/GamesPic/shadow-of-the-tomb-raider.webp';
-import ULImg from '../assets/pics/GamesPic/Uncharted_Legacy_of_Thieves_Collection.webp';
-import FC26Img from '../assets/pics/GamesPic/fc26.webp';
-import FH6Img from '../assets/pics/GamesPic/Forza Horizon 6.webp';
-import CODmw2Img from '../assets/pics/GamesPic/codmw2.webp';
-import ACBfrImg from '../assets/pics/GamesPic/acbf.webp';
-import RE9Img from '../assets/pics/GamesPic/RE9.webp';
+import apiClient from '../services/api-client';
 
 export default function ProductList() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
+
+  const [products, setProducts] = useState([]);
+  const [studios, setStudios] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [sortOrder, setSortOrder] = useState('default');
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,37 +19,62 @@ export default function ProductList() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedAvailability, setSelectedAvailability] = useState('All');
 
-  // Updated raw data with discountPrice for Sale items
-  const allProducts = [
-    { id: 1, title: 'GTA 5', price: 1500, discountPrice: 1200, image: GTA5Img, studio: 'Rockstar', category: 'Action', availability: 'Available', isDiscounted: true },
-    { id: 2, title: 'Red dead redemption 2', price: 2000, image: RDR2Img, studio: 'Rockstar', category: 'Action', availability: 'Available', isDiscounted: false },
-    { id: 3, title: 'Ghost of Tsushima', price: 1400, discountPrice: 1100, image: GOTImg, studio: 'Sony', category: 'Action', availability: 'Available', isDiscounted: true },
-    { id: 4, title: 'Shadow of the Tomb Raider', price: 600, discountPrice: 450, image: SOTRImg, studio: 'Square Enix', category: 'Adventure', availability: 'Available', isDiscounted: true },
-    { id: 5, title: 'Uncharted Legacy', price: 1600, image: ULImg, studio: 'Sony', category: 'Adventure', availability: 'Available', isDiscounted: false },
-    { id: 6, title: 'FC 26', price: 1200, image: FC26Img, studio: 'EA', category: 'Sports', availability: 'Available', isDiscounted: false },
-    { id: 7, title: 'Forza Horizon 6', price: 1800, image: FH6Img, studio: 'Microsoft', category: 'Racing', availability: 'Coming soon', isDiscounted: false },
-    { id: 8, title: 'Call Of Duty: MW2', price: 1600, image: CODmw2Img, studio: 'Activision', category: 'Shooter', availability: 'Available', isDiscounted: false },
-    { id: 9, title: 'AC black flag resynced', price: 1800, image: ACBfrImg, studio: 'Ubisoft', category: 'Action', availability: 'Coming soon', isDiscounted: false },
-    { id: 10, title: 'Resident Evil 9:Requiem', price: 1400, image: RE9Img, studio: 'Capcom', category: 'Horror', availability: 'Coming soon', isDiscounted: false },
-  ];
+  // Fetch games, studios, and categories on mount
+  useEffect(() => {
+    setIsLoading(true);
+    
+    Promise.all([
+      apiClient.get('/games/'),
+      apiClient.get('/studios/'),
+      apiClient.get('/categories/')
+    ])
+      .then(([gamesRes, studiosRes, categoriesRes]) => {
+        setProducts(gamesRes.data.results);
+        setStudios(studiosRes.data.results);
+        setCategories(categoriesRes.data.results);
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error("Error fetching product list data:", error);
+        setIsLoading(false);
+      });
+  }, []);
 
-  let processedProducts = allProducts.filter(product => {
-    const currentPrice = product.isDiscounted ? product.discountPrice : product.price;
+  let processedProducts = products.filter(product => {
+    const originalPrice = parseFloat(product.price);
+    const discountValue = parseFloat(product.discount || 0);
+    const finalPrice = discountValue > 0 ? originalPrice - (originalPrice * (discountValue / 100)) : originalPrice;
+    
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPrice = currentPrice >= minPrice && currentPrice <= maxPrice;
-    const matchesStudio = selectedStudio === 'All' || product.studio === selectedStudio;
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
-    const matchesAvailability = selectedAvailability === 'All' || product.availability === selectedAvailability;
+    const matchesPrice = finalPrice >= minPrice && finalPrice <= maxPrice;
+    const matchesStudio = selectedStudio === 'All' || product.studio_name === selectedStudio;
+    const matchesCategory = selectedCategory === 'All' || product.category === Number(selectedCategory);
+    
+    // Availability mapping: active = true -> 'Available', active = false -> 'Coming soon'
+    const productAvailability = product.active ? 'Available' : 'Coming soon';
+    const matchesAvailability = selectedAvailability === 'All' || productAvailability === selectedAvailability;
 
     return matchesSearch && matchesPrice && matchesStudio && matchesCategory && matchesAvailability;
   });
 
   if (sortOrder === 'low-to-high') {
-    processedProducts.sort((a, b) => (a.isDiscounted ? a.discountPrice : a.price) - (b.isDiscounted ? b.discountPrice : b.price));
+    processedProducts.sort((a, b) => {
+      const priceA = parseFloat(a.price) - parseFloat(a.discount || 0);
+      const priceB = parseFloat(b.price) - parseFloat(b.discount || 0);
+      return priceA - priceB;
+    });
   } else if (sortOrder === 'high-to-low') {
-    processedProducts.sort((a, b) => (b.isDiscounted ? b.discountPrice : b.price) - (a.isDiscounted ? a.discountPrice : a.price));
+    processedProducts.sort((a, b) => {
+      const priceA = parseFloat(a.price) - parseFloat(a.discount || 0);
+      const priceB = parseFloat(b.price) - parseFloat(b.discount || 0);
+      return priceB - priceA;
+    });
   } else if (sortOrder === 'discounted') {
-    processedProducts.sort((a, b) => (a.isDiscounted === b.isDiscounted ? 0 : a.isDiscounted ? -1 : 1));
+    processedProducts.sort((a, b) => {
+      const discA = parseFloat(a.discount || 0) > 0 ? 1 : 0;
+      const discB = parseFloat(b.discount || 0) > 0 ? 1 : 0;
+      return discB - discA;
+    });
   }
 
   const handleResetFilters = () => {
@@ -121,7 +141,6 @@ export default function ProductList() {
           input[type="number"] {
             -moz-appearance: textfield;
           }
-          /* Custom dual slider */
           .dual-range::-webkit-slider-thumb {
             pointer-events: auto;
             -webkit-appearance: none;
@@ -213,6 +232,7 @@ export default function ProductList() {
             </div>
 
             <div className="flex flex-col gap-4">
+              {/* Studio Filter */}
               <div className="relative">
                 <select 
                   value={selectedStudio}
@@ -220,19 +240,16 @@ export default function ProductList() {
                   className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
                 >
                   <option value="All">Studio</option>
-                  <option value="Rockstar">Rockstar</option>
-                  <option value="Sony">Sony</option>
-                  <option value="Square Enix">Square Enix</option>
-                  <option value="EA">EA</option>
-                  <option value="Activision">Activision</option>
-                  <option value="Ubisoft">Ubisoft</option>
-                  <option value="Capcom">Capcom</option>
+                  {studios.map(studio => (
+                    <option key={studio.id} value={studio.name}>{studio.name}</option>
+                  ))}
                 </select>
                 <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
 
+              {/* Category Filter */}
               <div className="relative">
                 <select 
                   value={selectedCategory}
@@ -240,18 +257,16 @@ export default function ProductList() {
                   className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
                 >
                   <option value="All">Category</option>
-                  <option value="Action">Action</option>
-                  <option value="Adventure">Adventure</option>
-                  <option value="Shooter">Shooter</option>
-                  <option value="Sports">Sports</option>
-                  <option value="Racing">Racing</option>
-                  <option value="Horror">Horror</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
                 </select>
                 <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </div>
 
+              {/* Availability Filter */}
               <div className="relative">
                 <select 
                   value={selectedAvailability}
@@ -282,68 +297,93 @@ export default function ProductList() {
         <div className="flex-1 w-full mt-0">
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 xl:gap-8">
             
-            {processedProducts.length > 0 ? (
-              processedProducts.map((product, index) => (
+            {isLoading ? (
+              [...Array(8)].map((_, index) => (
                 <div
-                  key={product.id}
-                  className={`flex flex-col slide-up-physical ${isVisible ? 'in-view' : ''}`}
-                  style={{ transitionDelay: `${(index % 5) * 100}ms` }}
+                  key={`skeleton-${index}`}
+                  className="flex flex-col"
                 >
-                  
-                  <Link to={`/product/${product.id}`} className="block group cursor-pointer flex-grow">
-                    
-                    <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] flex items-center justify-center mb-4 bg-[#1a1a1a] overflow-hidden">
-                        {product.image ? (
-                          <img 
-                            src={product.image} 
-                            alt={product.title} 
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-500">
-                            No Image
-                          </div>
-                        )}
-                        
-                        {/* Dynamic Tags */}
-                        {product.isDiscounted && (
-                          <div className="absolute top-4 right-4 bg-[#2ecc71] text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10">
-                            Sale
-                          </div>
-                        )}
-                        {product.availability === 'Coming soon' && (
-                          <div className="absolute top-4 right-4 bg-cyan-400 text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10">
-                            Upcoming
-                          </div>
-                        )}
+                  <div className="animate-pulse flex flex-col h-full">
+                    <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] mb-4 bg-[#333]"></div>
+                    <div className="flex flex-col px-1 mb-4">
+                      <div className="h-6 bg-[#444] rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-[#222] rounded w-1/2"></div>
                     </div>
-
-                    <div className="flex flex-col mb-4">
-                      <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-gray-300 transition-colors truncate">{product.title}</span>
-                      
-                     {/* Price Logic */}
-                      {product.isDiscounted ? (
-                        <div className="flex items-center gap-2 text-sm md:text-base">
-                          <span className="text-gray-300 font-bold">
-                            Price: <span className="text-gray-500 line-through">{product.price}</span>
-                          </span>
-                          <span className="text-white font-bold">{product.discountPrice} BDT</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-300 font-bold text-sm md:text-base">Price: {product.price} BDT</span>
-                      )}
-                    </div>
-
-                  </Link>
-
-                  <button className="mt-auto w-full py-3.5 bg-[#b0b0b0] hover:bg-[#2ecc71] transition-colors rounded-xl flex items-center justify-center shadow-sm">
-                    <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </button>
-                  
+                    <div className="mt-auto w-full h-[48px] bg-[#333] rounded-xl"></div>
+                  </div>
                 </div>
               ))
+            ) : processedProducts.length > 0 ? (
+              processedProducts.map((product, index) => {
+                const imageUrl = product.images && product.images.length > 0 ? product.images[0].image : null;
+                const originalPrice = parseFloat(product.price);
+                const discountVal = parseFloat(product.discount || 0);
+                const hasDiscount = discountVal > 0;
+                const finalPrice = hasDiscount ? originalPrice - (originalPrice * (discountVal / 100)) : originalPrice;
+                const isComingSoon = !product.active;
+
+                return (
+                  <div
+                    key={product.id}
+                    className={`flex flex-col slide-up-physical ${isVisible ? 'in-view' : ''}`}
+                    style={{ transitionDelay: `${(index % 5) * 100}ms` }}
+                  >
+                    
+                    <Link to={`/product/${product.id}`} className="block group cursor-pointer flex-grow">
+                      
+                      <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] flex items-center justify-center mb-4 bg-[#1a1a1a] overflow-hidden">
+                          {imageUrl ? (
+                            <img 
+                              src={imageUrl} 
+                              alt={product.title} 
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-500">
+                              No Image
+                            </div>
+                          )}
+                          
+                          {/* Dynamic Tags */}
+                          {hasDiscount && (
+                            <div className="absolute top-4 right-4 bg-[#2ecc71] text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10">
+                              Sale
+                            </div>
+                          )}
+                          {isComingSoon && (
+                            <div className="absolute top-4 right-4 bg-cyan-400 text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10">
+                              Upcoming
+                            </div>
+                          )}
+                      </div>
+
+                      <div className="flex flex-col mb-4">
+                        <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-gray-300 transition-colors truncate">{product.title}</span>
+                        
+                        {/* Price Logic */}
+                        {hasDiscount ? (
+                          <div className="flex items-center gap-2 text-sm md:text-base">
+                            <span className="text-gray-300 font-bold">
+                              Price: <span className="text-gray-500 line-through">{originalPrice}</span>
+                            </span>
+                            <span className="text-white font-bold">{finalPrice} BDT</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 font-bold text-sm md:text-base">Price: {originalPrice} BDT</span>
+                        )}
+                      </div>
+
+                    </Link>
+
+                    <button className="mt-auto w-full py-3.5 bg-[#b0b0b0] hover:bg-[#2ecc71] transition-colors rounded-xl flex items-center justify-center shadow-sm">
+                      <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </button>
+                    
+                  </div>
+                );
+              })
             ) : (
               <div className="col-span-full pt-12 text-center text-gray-400 text-lg md:text-xl font-bold">
                 No products match your current filters.

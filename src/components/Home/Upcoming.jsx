@@ -5,12 +5,13 @@ export default function Upcoming() {
   const [isHovered, setIsHovered] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   
+  // Added isUpcoming property to specific slides
   const slides = [
-    { videoId: "rJrqHyojaa4", title: "Wolvarine" },
-    { videoId: "VQRLujxTm3c", title: "GTA 6" },
-    { videoId: "HLMX2w3cwuE", title: "God of War" },
-    { videoId: "u2jrHzua0jA", title: "Resident Evil 9" },
-    { videoId: "uPqxmNJxztA", title: "AC blackflag Resynced" }
+    { videoId: "rJrqHyojaa4", title: "Wolvarine", isUpcoming: true },
+    { videoId: "VQRLujxTm3c", title: "GTA 6", isUpcoming: true },
+    { videoId: "HLMX2w3cwuE", title: "God of War", isUpcoming: true },
+    { videoId: "u2jrHzua0jA", title: "Resident Evil 9", isUpcoming: false },
+    { videoId: "uPqxmNJxztA", title: "AC blackflag Resynced", isUpcoming: false }
   ];
 
   const handleMouseEnter = () => setIsHovered(true);
@@ -39,7 +40,6 @@ export default function Upcoming() {
   }, [isHovered, slides.length]);
 
   return (
-    // Changed to motion.div and added entrance animation
     <motion.div 
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
@@ -72,8 +72,17 @@ export default function Upcoming() {
           transition={{ type: "tween", ease: "easeInOut", duration: 0.7 }}
         >
           {slides.map((slide, index) => (
-            <div key={slide.videoId} className="w-full h-full shrink-0 relative">
+            <div key={slide.videoId} className="w-full h-full shrink-0 relative overflow-hidden">
               
+              {/* Upcoming Corner Ribbon */}
+              {slide.isUpcoming && (
+                <div className="absolute top-0 right-0 z-40 w-40 h-40 pointer-events-none">
+                  <div className="absolute top-8 -right-12 w-[200px] rotate-45 bg-white text-black text-center font-extrabold py-2 shadow-lg uppercase tracking-widest text-sm md:text-base">
+                    Upcoming
+                  </div>
+                </div>
+              )}
+
               {index === currentIndex && (
                 <iframe
                   src={`https://www.youtube.com/embed/${slide.videoId}?autoplay=1&mute=1&loop=1&playlist=${slide.videoId}&controls=0&modestbranding=1`}
