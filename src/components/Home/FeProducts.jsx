@@ -162,12 +162,11 @@ export default function FeaturedProducts() {
                       
                       {hasDiscount ? (
                         <div className="flex items-center flex-wrap gap-x-2 text-sm sm:text-base md:text-lg">
-                          <span className="text-gray-400 font-bold">Price:</span>
-                          <span className="text-gray-400 line-through font-bold">{originalPrice}</span>
-                          <span className="text-white font-extrabold">{finalPrice.toFixed(0)} BDT</span>
+                          <span className="text-gray-400 line-through font-bold">{originalPrice} ৳</span>
+                          <span className="text-white font-extrabold">{finalPrice.toFixed(0)} ৳</span>
                         </div>
                       ) : (
-                        <span className="text-gray-300 font-bold text-sm sm:text-base md:text-lg">{originalPrice} BDT</span>
+                        <span className="text-gray-300 font-bold text-sm sm:text-base md:text-lg">{originalPrice} ৳</span>
                       )}
                     </div>
 

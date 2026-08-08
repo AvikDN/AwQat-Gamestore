@@ -364,12 +364,12 @@ export default function ProductList() {
                         {hasDiscount ? (
                           <div className="flex items-center gap-2 text-sm md:text-base">
                             <span className="text-gray-300 font-bold">
-                              Price: <span className="text-gray-500 line-through">{originalPrice}</span>
+                              Price: <span className="text-gray-500 line-through">{originalPrice} ৳</span>
                             </span>
-                            <span className="text-white font-bold">{finalPrice} BDT</span>
+                            <span className="text-white font-bold">{finalPrice} ৳</span>
                           </div>
                         ) : (
-                          <span className="text-gray-300 font-bold text-sm md:text-base">Price: {originalPrice} BDT</span>
+                          <span className="text-gray-300 font-bold text-sm md:text-base">Price: {originalPrice} ৳</span>
                         )}
                       </div>
 

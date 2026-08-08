@@ -284,23 +284,21 @@ export default function ProductDetails() {
             
             <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-2xl relative overflow-hidden">
               <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#2ecc71]/5 rounded-full blur-3xl pointer-events-none"></div>
-
-              <span className="text-xl font-bold mb-1 text-gray-400 relative z-10">Purchase Panel</span>
               
               <div className="flex items-baseline gap-3 mb-6 relative z-10">
-                <span className="text-sm font-bold text-gray-400">Price:</span>
+                <span className="text-sm font-bold text-white">Price:</span>
                 {hasDiscount ? (
                   <div className="flex items-center gap-3">
                     <span className="text-gray-400 line-through text-2xl md:text-3xl font-bold">
-                      {totalOriginalPrice}
+                      {totalOriginalPrice} ৳
                     </span>
-                    <span className="text-4xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
-                      {totalPrice.toFixed(0)} BDT
+                    <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
+                      {totalPrice.toFixed(0)} ৳
                     </span>
                   </div>
                 ) : (
-                  <span className="text-4xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
-                    {totalOriginalPrice} BDT
+                  <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
+                    {totalOriginalPrice} ৳
                   </span>
                 )}
               </div>
