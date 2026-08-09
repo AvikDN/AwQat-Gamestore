@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router";
 import MainLayout from "../layouts/MainLayout";
-import Home from "../pages/Home";
+import Home from "../pages/home";
 import ProductDetails from "../pages/ProductDetails";
 import ProductList from "../pages/ProductList";
 import FAQ from "../pages/FAQ";
