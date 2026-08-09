@@ -26,40 +26,26 @@ AwQat Gamestore is a web platform that lets you purchase in-game currencies and 
 
 ### Prerequisites
 
-Install Node.js (for React), Python (for Django), and PostgreSQL on your machine.
+Install Node.js (for React)
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-repo-link/awqat-gamestore.git
+git clone https://github.com/AvikDN/AwQat-Gamestore
 cd awqat-gamestore
 
 ```
 
-
-2. Set up the backend:
+2. Set up the frontend:
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-
-```
-
-
-3. Set up the frontend:
-```bash
-cd ../frontend
 npm install
 npm start
 
 ```
 
 
-4. Open `http://localhost:3000` to view the frontend in your browser. The backend API will run on `http://localhost:8000`.
+3. Open `http://localhost:3000` to view the frontend in your browser.
 
 ## License
 
