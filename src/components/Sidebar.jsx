@@ -9,8 +9,8 @@ export default function Sidebar() {
 
   const navItems = [
     { 
-      name: 'Overview', 
-      path: '/overview', 
+      name: 'Profile', 
+      path: '/dashboard', 
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <rect x="3" y="3" width="7" height="7" rx="1" />

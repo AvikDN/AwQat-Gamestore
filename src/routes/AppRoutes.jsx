@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router";
 import MainLayout from "../layouts/MainLayout";
+import DashLayout from "../layouts/DashLayout";
 import Home from "../pages/home";
 import ProductDetails from "../pages/ProductDetails";
 import ProductList from "../pages/ProductList";
@@ -8,11 +9,8 @@ import About from "../pages/AboutUs";
 import Contact from "../pages/Contact";
 import PnP from "../pages/PnP";
 import TOS from "../pages/TOS";
-import ScrollToTop from "../components/ScrollToTop";
-import AboutUs from "../pages/AboutUs";
-import Sidebar from "../components/Sidebar";
-import Dashfooter from "../components/dashfooter";
 import Dashboard from "../pages/Dashboard";
+import ScrollToTop from "../components/ScrollToTop";
 
 const AppRoutes = () => {
   return (
@@ -23,9 +21,6 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/product/:id" element={<ProductDetails />} />
-        <Route path="/sidebar" element={<Sidebar />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dashfooter" element={<Dashfooter />} />
         
         <Route path="/faq" element={<FAQ />} />
         <Route path="/about" element={<About />} />
@@ -33,10 +28,15 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<PnP />} />
         <Route path="/terms" element={<TOS />} />
       </Route>
+
+      <Route element={<DashLayout />}>
+        {/* Add your dashboard nested routes here, for example: */}
+        <Route path="/dashboard" element={<Dashboard />} />
+
+      </Route>
     </Routes>
     </>
   );
 };
-
 
 export default AppRoutes;
