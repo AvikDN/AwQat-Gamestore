@@ -30,8 +30,8 @@ const AppRoutes = () => {
       </Route>
 
       <Route element={<DashLayout />}>
-        {/* Add your dashboard nested routes here, for example: */}
         <Route path="/dashboard" element={<Dashboard />} />
+        {/* <Route path="/dashboard/categories" element={<Categories />} /> */}
 
       </Route>
     </Routes>
