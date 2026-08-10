@@ -10,6 +10,7 @@ import PnP from "../pages/PnP";
 import TOS from "../pages/TOS";
 import ScrollToTop from "../components/ScrollToTop";
 import AboutUs from "../pages/AboutUs";
+import Sidebar from "../components/Sidebar";
 const AppRoutes = () => {
   return (
     <>
@@ -19,6 +20,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/sidebar" element={<Sidebar />} />
         
         <Route path="/faq" element={<FAQ />} />
         <Route path="/about" element={<About />} />
