@@ -11,6 +11,9 @@ import TOS from "../pages/TOS";
 import ScrollToTop from "../components/ScrollToTop";
 import AboutUs from "../pages/AboutUs";
 import Sidebar from "../components/Sidebar";
+import Dashfooter from "../components/dashfooter";
+import Dashboard from "../pages/Dashboard";
+
 const AppRoutes = () => {
   return (
     <>
@@ -21,6 +24,8 @@ const AppRoutes = () => {
         <Route path="/products" element={<ProductList />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/sidebar" element={<Sidebar />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashfooter" element={<Dashfooter />} />
         
         <Route path="/faq" element={<FAQ />} />
         <Route path="/about" element={<About />} />
@@ -32,5 +37,6 @@ const AppRoutes = () => {
     </>
   );
 };
+
 
 export default AppRoutes;
