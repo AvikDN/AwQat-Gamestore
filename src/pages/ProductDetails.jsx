@@ -104,6 +104,7 @@ export default function ProductDetails() {
     );
   }
 
+  const isComingSoon = !product.active;
   const originalPrice = Number(product.price);
   const discountValue = Number(product.discount || 0);
   const hasDiscount = discountValue > 0;
@@ -134,9 +135,14 @@ export default function ProductDetails() {
             
             {/* Main Media Block */}
             <motion.div variants={itemVariants} className="w-full aspect-video bg-[#1a1a1a] rounded-xl overflow-hidden flex items-center justify-center shadow-xl border border-transparent hover:border-[#2ecc71]/30 transition-colors relative">
-              {hasDiscount && (
+              {hasDiscount && !isComingSoon && (
                 <div className="absolute top-4 right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-sm sm:text-base px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(46,204,113,0.6)]">
                   Sale
+                </div>
+              )}
+              {isComingSoon && (
+                <div className="absolute top-4 right-4 z-10 bg-cyan-400 text-black font-extrabold text-sm sm:text-base px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(34,211,238,0.6)]">
+                  Upcoming
                 </div>
               )}
 
@@ -284,24 +290,34 @@ export default function ProductDetails() {
             
             <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-2xl relative overflow-hidden">
               <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#2ecc71]/5 rounded-full blur-3xl pointer-events-none"></div>
+
+              <span className="text-xl font-bold mb-1 text-gray-400 relative z-10">Purchase Panel</span>
               
-              <div className="flex items-baseline gap-3 mb-6 relative z-10">
-                <span className="text-sm font-bold text-white">Price:</span>
-                {hasDiscount ? (
-                  <div className="flex items-center gap-3">
-                    <span className="text-gray-400 line-through text-2xl md:text-3xl font-bold">
+              {isComingSoon ? (
+                <div className="flex items-baseline gap-3 mb-6 relative z-10">
+                  <span className="text-3xl md:text-4xl font-black tracking-tight text-cyan-400">
+                    Available soon
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-3 mb-6 relative z-10">
+                  <span className="text-sm font-bold text-white">Price:</span>
+                  {hasDiscount ? (
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-400 line-through text-2xl md:text-3xl font-bold">
+                        {totalOriginalPrice} ৳
+                      </span>
+                      <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
+                        {totalPrice.toFixed(0)} ৳
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
                       {totalOriginalPrice} ৳
                     </span>
-                    <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
-                      {totalPrice.toFixed(0)} ৳
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
-                    {totalOriginalPrice} ৳
-                  </span>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
               
               <span className="text-sm font-bold mb-2 text-gray-400 relative z-10">Supported Platforms</span>
               <div className="flex mb-6 relative z-10">
@@ -310,44 +326,49 @@ export default function ProductDetails() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 mb-6 relative z-10">
-                <motion.button 
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={decreaseQuantity} 
-                  className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center"
-                >
-                  -
-                </motion.button>
-                <div className="w-12 h-8 bg-black border border-[#333] text-white font-bold flex items-center justify-center rounded-md">
-                  {quantity}
-                </div>
-                <motion.button 
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={increaseQuantity} 
-                  className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center"
-                >
-                  +
-                </motion.button>
-              </div>
+              {/* Hide Action Buttons if product is upcoming */}
+              {!isComingSoon && (
+                <>
+                  <div className="flex items-center gap-1.5 mb-6 relative z-10">
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={decreaseQuantity} 
+                      className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center"
+                    >
+                      -
+                    </motion.button>
+                    <div className="w-12 h-8 bg-black border border-[#333] text-white font-bold flex items-center justify-center rounded-md">
+                      {quantity}
+                    </div>
+                    <motion.button 
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={increaseQuantity} 
+                      className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center"
+                    >
+                      +
+                    </motion.button>
+                  </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 relative z-10">
-                <motion.button 
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-1 bg-[#333] hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-white font-bold text-center border border-transparent"
-                >
-                  Add to cart
-                </motion.button>
-                <motion.button 
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex-1 bg-[#2ecc71] hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-black font-extrabold text-center border border-transparent"
-                >
-                  Buy Now
-                </motion.button>
-              </div>
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 relative z-10">
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 bg-[#333] hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-white font-bold text-center border border-transparent"
+                    >
+                      Add to cart
+                    </motion.button>
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="flex-1 bg-[#2ecc71] hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-black font-extrabold text-center border border-transparent"
+                    >
+                      Buy Now
+                    </motion.button>
+                  </div>
+                </>
+              )}
             </motion.div>
 
             {/* Dynamic System Requirements */}

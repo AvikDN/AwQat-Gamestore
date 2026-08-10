@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../../services/api-client';
 
 const containerVariants = {
@@ -22,6 +23,7 @@ const itemVariants = {
 export default function Categories() {
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   const rotations = [-6, 3, -3, 6, -2, 2, -6, 6];
 
@@ -30,7 +32,7 @@ export default function Categories() {
     
     apiClient.get('/categories')
       .then(response => {
-        setCategories(response.data.results);
+        setCategories(response.data.results || []);
         setIsLoading(false);
       })
       .catch(error => {
@@ -38,6 +40,8 @@ export default function Categories() {
         setIsLoading(false);
       });
   }, []);
+
+  const displayedCategories = categories.slice(0, 7);
 
   return (
     <section className="w-full max-w-[1200px] mx-auto py-16 px-4 md:px-8 overflow-visible">
@@ -55,7 +59,6 @@ export default function Categories() {
       </div>
 
       <motion.div 
-        // 1. Added a dynamic key here so the animation replays when data loads
         key={isLoading ? 'loading' : 'loaded'}
         className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12"
         variants={containerVariants}
@@ -81,36 +84,65 @@ export default function Categories() {
                 </motion.div>
               );
             })
-          : categories.map((cat, index) => {
-              const baseRotation = rotations[index % rotations.length];
-              
-              return (
-                <motion.div 
-                  key={cat.id} 
-                  variants={itemVariants}
-                  whileHover={{ 
-                    scale: 1.05, 
-                    rotate: 0, 
-                    y: -10, 
-                    transition: { type: "spring", stiffness: 300, damping: 20 } 
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  style={{ rotate: baseRotation }}
-                  className="flex flex-col p-3 pb-8 bg-[#8c8c8c] rounded-lg shadow-xl cursor-pointer"
-                >
-                  <div className="bg-white aspect-[4/3] rounded flex items-center justify-center shadow-inner overflow-hidden">
-                    <img 
-                      src={cat.image} 
-                      alt={cat.name} 
-                      className="w-16 h-16 object-contain" 
-                    />
-                  </div>
-                  <div className="text-center mt-6 font-extrabold text-xl text-black tracking-wide">
-                    {cat.name}
-                  </div>
-                </motion.div>
-              );
-            })
+          : (
+            <>
+              {displayedCategories.map((cat, index) => {
+                const baseRotation = rotations[index % rotations.length];
+                
+                return (
+                  <motion.div 
+                    key={cat.id} 
+                    variants={itemVariants}
+                    whileHover={{ 
+                      scale: 1.05, 
+                      rotate: 0, 
+                      y: -10, 
+                      transition: { type: "spring", stiffness: 300, damping: 20 } 
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{ rotate: baseRotation }}
+                    className="flex flex-col p-3 pb-8 bg-[#8c8c8c] rounded-lg shadow-xl cursor-pointer"
+                  >
+                    <div className="bg-white aspect-[4/3] rounded flex items-center justify-center shadow-inner overflow-hidden">
+                      <img 
+                        src={cat.image} 
+                        alt={cat.name} 
+                        className="w-16 h-16 object-contain" 
+                      />
+                    </div>
+                    <div className="text-center mt-6 font-extrabold text-xl text-black tracking-wide">
+                      {cat.name}
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {/* 8th Slot: See More Card */}
+              <motion.div 
+                key="see-more" 
+                variants={itemVariants}
+                whileHover={{ 
+                  scale: 1.05, 
+                  rotate: 0, 
+                  y: -10, 
+                  transition: { type: "spring", stiffness: 300, damping: 20 } 
+                }}
+                whileTap={{ scale: 0.95 }}
+                style={{ rotate: rotations[7] }} // Always use the 8th rotation value
+                onClick={() => navigate('/categories/')}
+                className="flex flex-col p-3 pb-8 bg-[#2ecc71] rounded-lg shadow-xl cursor-pointer"
+              >
+                <div className="bg-white aspect-[4/3] rounded flex items-center justify-center shadow-inner overflow-hidden">
+                  <svg className="w-16 h-16 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </div>
+                <div className="text-center mt-6 font-extrabold text-xl text-black tracking-wide">
+                  See More
+                </div>
+              </motion.div>
+            </>
+          )
         }
       </motion.div>
     </section>

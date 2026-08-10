@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '../../services/api-client';
 
@@ -6,6 +7,7 @@ export default function Offers() {
   const [cards, setCards] = useState([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   const cardThemes = [
     { bgColor: '#062427', badgeColor: '#2ecc71' },
@@ -16,13 +18,12 @@ export default function Offers() {
   useEffect(() => {
     setIsLoading(true);
     
-    apiClient.get('/games/')
+    apiClient.get('/games/discounted/')
       .then(response => {
-        const discountedGames = response.data.results.filter(
-          game => parseFloat(game.discount) > 0
-        );
+        const discountedGames = response.data;
 
-        const formattedCards = discountedGames.slice(0, 3).map((game, index) => {
+        // Removed .slice(0, 3) to include ALL discounted games in the cycle
+        const formattedCards = discountedGames.map((game, index) => {
           const theme = cardThemes[index % cardThemes.length];
           const discountValue = parseFloat(game.discount);
           
@@ -103,7 +104,8 @@ export default function Offers() {
         opacity: 1
       };
     }
-    return { x: "30%", y: 0, rotate: 0, scale: 0.9, zIndex: 0, opacity: 0 };
+    // Keep cards 4+ completely hidden until they rotate into the top 3 spots
+    return { x: "40%", y: 0, rotate: 0, scale: 0.85, zIndex: 0, opacity: 0 };
   };
 
   if (!isLoading && cards.length === 0) {
@@ -125,10 +127,7 @@ export default function Offers() {
         </motion.h2>
       </div>
 
-      <div 
-        className="relative w-full max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[700px] xl:max-w-[900px] h-[240px] sm:h-[300px] md:h-[360px] lg:h-[480px] xl:h-[600px] mx-auto cursor-pointer" 
-        onClick={shuffleCards}
-      >
+      <div className="relative w-full max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[700px] xl:max-w-[900px] h-[240px] sm:h-[300px] md:h-[360px] lg:h-[480px] xl:h-[600px] mx-auto">
         <AnimatePresence>
           {isLoading && (
             [...Array(3)].map((_, index) => (
@@ -171,6 +170,14 @@ export default function Offers() {
           {!isLoading && cards.map((card, index) => (
             <motion.div
               key={card.id}
+              onClick={() => {
+                // If it's the front card, go to the product page. If it's a back card, shuffle it forward.
+                if (index === 0 && !isAnimating) {
+                  navigate(`/product/${card.id}`);
+                } else if (index > 0 && !isAnimating) {
+                  shuffleCards();
+                }
+              }}
               initial={{ 
                 opacity: 0, 
                 scale: 0.6, 
@@ -180,7 +187,7 @@ export default function Offers() {
               animate={getCardAnimation(index, isAnimating)}
               exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="absolute top-0 left-0 w-full h-full rounded-[2rem] p-5 md:p-8 lg:p-10 shadow-2xl flex flex-col"
+              className={`absolute top-0 left-0 w-full h-full rounded-[2rem] p-5 md:p-8 lg:p-10 shadow-2xl flex flex-col ${index <= 2 ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}`}
               style={{ backgroundColor: card.bgColor }}
             >
               
@@ -224,6 +231,14 @@ export default function Offers() {
               <div className="mt-auto flex flex-col text-white">
                 <span className="font-extrabold text-2xl md:text-3xl lg:text-4xl xl:text-5xl tracking-tight line-clamp-1">{card.title}</span>
                 <span className="text-gray-300 font-medium text-base md:text-lg lg:text-xl xl:text-2xl mt-1 md:mt-2 line-clamp-1">{card.desc}</span>
+                
+                {/* Visual cue that only appears on the front card */}
+                <div className={`mt-3 md:mt-4 overflow-hidden transition-all duration-500 ${index === 0 ? 'opacity-100 max-h-14' : 'opacity-0 max-h-0'}`}>
+                   <span className="inline-flex items-center text-black bg-[#2ecc71] font-bold px-4 py-2 rounded-full text-sm md:text-base shadow-[0_0_10px_rgba(46,204,113,0.5)]">
+                     View Deal
+                     <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                   </span>
+                </div>
               </div>
               
             </motion.div>

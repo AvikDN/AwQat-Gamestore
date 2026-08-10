@@ -10,6 +10,7 @@ import Contact from "../pages/Contact";
 import PnP from "../pages/PnP";
 import TOS from "../pages/TOS";
 import Dashboard from "../pages/Dashboard";
+import Categories from "../pages/Categories";
 import ScrollToTop from "../components/ScrollToTop";
 
 const AppRoutes = () => {
@@ -21,6 +22,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/product/:id" element={<ProductDetails />} />
+        <Route path="/categories" element={<Categories />} />
         
         <Route path="/faq" element={<FAQ />} />
         <Route path="/about" element={<About />} />

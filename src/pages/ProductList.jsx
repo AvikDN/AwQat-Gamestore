@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import apiClient from '../services/api-client';
 
 export default function ProductList() {
@@ -11,80 +12,113 @@ export default function ProductList() {
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+
   const [sortOrder, setSortOrder] = useState('default');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(3000);
   const [selectedStudio, setSelectedStudio] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedAvailability, setSelectedAvailability] = useState('All');
 
-  // Fetch games, studios, and categories on mount
+  // Fetch Studios and Categories on mount
   useEffect(() => {
-    setIsLoading(true);
-    
     Promise.all([
-      apiClient.get('/games/'),
       apiClient.get('/studios/'),
       apiClient.get('/categories/')
     ])
-      .then(([gamesRes, studiosRes, categoriesRes]) => {
-        setProducts(gamesRes.data.results);
-        setStudios(studiosRes.data.results);
-        setCategories(categoriesRes.data.results);
-        setIsLoading(false);
+      .then(([studiosRes, categoriesRes]) => {
+        setStudios(studiosRes.data.results || []);
+        setCategories(categoriesRes.data.results || []);
       })
       .catch(error => {
-        console.error("Error fetching product list data:", error);
-        setIsLoading(false);
+        console.error("Error fetching studios/categories:", error);
       });
   }, []);
 
-  let processedProducts = products.filter(product => {
-    const originalPrice = parseFloat(product.price);
-    const discountValue = parseFloat(product.discount || 0);
-    const finalPrice = discountValue > 0 ? originalPrice - (originalPrice * (discountValue / 100)) : originalPrice;
-    
-    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPrice = finalPrice >= minPrice && finalPrice <= maxPrice;
-    const matchesStudio = selectedStudio === 'All' || product.studio_name === selectedStudio;
-    const matchesCategory = selectedCategory === 'All' || product.category === Number(selectedCategory);
-    
-    // Availability mapping: active = true -> 'Available', active = false -> 'Coming soon'
-    const productAvailability = product.active ? 'Available' : 'Coming soon';
-    const matchesAvailability = selectedAvailability === 'All' || productAvailability === selectedAvailability;
+  // Debounce search term to prevent rapid API calls while typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-    return matchesSearch && matchesPrice && matchesStudio && matchesCategory && matchesAvailability;
-  });
+  // Reset page to 1 when endpoint-altering filters change
+  useEffect(() => {
+    setPage(1);
+  }, [sortOrder, selectedAvailability, debouncedSearch]);
 
-  if (sortOrder === 'low-to-high') {
-    processedProducts.sort((a, b) => {
-      const priceA = parseFloat(a.price) - parseFloat(a.discount || 0);
-      const priceB = parseFloat(b.price) - parseFloat(b.discount || 0);
-      return priceA - priceB;
-    });
-  } else if (sortOrder === 'high-to-low') {
-    processedProducts.sort((a, b) => {
-      const priceA = parseFloat(a.price) - parseFloat(a.discount || 0);
-      const priceB = parseFloat(b.price) - parseFloat(b.discount || 0);
-      return priceB - priceA;
-    });
-  } else if (sortOrder === 'discounted') {
-    processedProducts.sort((a, b) => {
-      const discA = parseFloat(a.discount || 0) > 0 ? 1 : 0;
-      const discB = parseFloat(b.discount || 0) > 0 ? 1 : 0;
-      return discB - discA;
-    });
-  }
+  // Fetch Games based on current page and endpoints
+  useEffect(() => {
+    setIsLoading(true);
+    
+    let endpoint = '/games/';
+    if (selectedAvailability === 'Coming soon') {
+      endpoint = '/games/upcoming/';
+    } else if (sortOrder === 'discounted') {
+      endpoint = '/games/discounted/';
+    }
+
+    const queryParams = new URLSearchParams({ page: page });
+
+    if (debouncedSearch) {
+      queryParams.append('search', debouncedSearch);
+    }
+
+    if (sortOrder === 'low-to-high') {
+      queryParams.append('ordering', 'price');
+    } else if (sortOrder === 'high-to-low') {
+      queryParams.append('ordering', '-price');
+    }
+
+    apiClient.get(`${endpoint}?${queryParams.toString()}`)
+      .then(response => {
+        const data = response.data;
+        
+        if (Array.isArray(data)) {
+          setProducts(data);
+          setHasNext(false); 
+          setHasPrev(false);
+        } else {
+          setProducts(data.results || []);
+          setHasNext(!!data.next);
+          setHasPrev(!!data.previous);
+        }
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error("Error fetching games:", error);
+        setIsLoading(false);
+      });
+      
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page, sortOrder, selectedAvailability, debouncedSearch]);
+
+  const handleNextPage = () => {
+    if (hasNext) setPage(prev => prev + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (hasPrev) setPage(prev => prev - 1);
+  };
 
   const handleResetFilters = () => {
     setSortOrder('default');
     setSearchTerm('');
+    setDebouncedSearch('');
     setMinPrice(0);
     setMaxPrice(3000);
     setSelectedStudio('All');
     setSelectedCategory('All');
     setSelectedAvailability('All');
+    setPage(1);
   };
 
   const handleMinChange = (e) => {
@@ -96,6 +130,20 @@ export default function ProductList() {
     const value = Math.max(Number(e.target.value), minPrice + 100);
     setMaxPrice(value);
   };
+
+  // Client-side filtering for the current page of results
+  // (Search and sorting are now handled by the backend)
+  let processedProducts = products.filter(product => {
+    const originalPrice = parseFloat(product.price);
+    const discountValue = parseFloat(product.discount || 0);
+    const finalPrice = discountValue > 0 ? originalPrice - (originalPrice * (discountValue / 100)) : originalPrice;
+    
+    const matchesPrice = finalPrice >= minPrice && finalPrice <= maxPrice;
+    const matchesStudio = selectedStudio === 'All' || product.studio_name === selectedStudio;
+    const matchesCategory = selectedCategory === 'All' || product.category === Number(selectedCategory);
+
+    return matchesPrice && matchesStudio && matchesCategory;
+  });
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -345,7 +393,7 @@ export default function ProductList() {
                           )}
                           
                           {/* Dynamic Tags */}
-                          {hasDiscount && (
+                          {hasDiscount && !isComingSoon && (
                             <div className="absolute top-4 right-4 bg-[#2ecc71] text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10">
                               Sale
                             </div>
@@ -358,15 +406,16 @@ export default function ProductList() {
                       </div>
 
                       <div className="flex flex-col mb-4">
-                        <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-gray-300 transition-colors truncate">{product.title}</span>
+                        <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-[#2ecc71] transition-colors truncate">{product.title}</span>
                         
                         {/* Price Logic */}
-                        {hasDiscount ? (
+                        {isComingSoon ? (
+                          <span className="text-cyan-400 font-bold text-sm md:text-base">Available soon</span>
+                        ) : hasDiscount ? (
                           <div className="flex items-center gap-2 text-sm md:text-base">
-                            <span className="text-gray-300 font-bold">
-                              Price: <span className="text-gray-500 line-through">{originalPrice} ৳</span>
-                            </span>
-                            <span className="text-white font-bold">{finalPrice} ৳</span>
+                            <span className="text-gray-400 font-bold">Price:</span>
+                            <span className="text-gray-400 font-bold line-through">{originalPrice} ৳</span>
+                            <span className="text-white font-extrabold">{finalPrice.toFixed(0)} ৳</span>
                           </div>
                         ) : (
                           <span className="text-gray-300 font-bold text-sm md:text-base">Price: {originalPrice} ৳</span>
@@ -375,8 +424,8 @@ export default function ProductList() {
 
                     </Link>
 
-                    <button className="mt-auto w-full py-3.5 bg-[#b0b0b0] hover:bg-[#2ecc71] transition-colors rounded-xl flex items-center justify-center shadow-sm">
-                      <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <button className="mt-auto w-full py-3.5 bg-[#b0b0b0] hover:bg-[#2ecc71] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 rounded-xl flex items-center justify-center group">
+                      <svg className="w-6 h-6 text-black group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                     </button>
@@ -391,6 +440,49 @@ export default function ProductList() {
             )}
             
           </div>
+
+          {/* Pagination Controls */}
+          {!isLoading && (hasPrev || hasNext) && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex items-center justify-center gap-4 mt-16"
+            >
+              <button
+                onClick={handlePrevPage}
+                disabled={!hasPrev}
+                className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                  hasPrev 
+                    ? 'border-[#2ecc71] text-[#2ecc71] hover:bg-[#2ecc71] hover:text-black cursor-pointer' 
+                    : 'border-[#333] text-[#555] cursor-not-allowed'
+                }`}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              <div className="text-white font-extrabold text-lg px-4">
+                Page {page}
+              </div>
+
+              <button
+                onClick={handleNextPage}
+                disabled={!hasNext}
+                className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                  hasNext 
+                    ? 'border-[#2ecc71] text-[#2ecc71] hover:bg-[#2ecc71] hover:text-black cursor-pointer shadow-[0_0_10px_rgba(46,204,113,0.3)] hover:shadow-[0_0_20px_rgba(46,204,113,0.6)]' 
+                    : 'border-[#333] text-[#555] cursor-not-allowed'
+                }`}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </motion.div>
+          )}
+
         </div>
 
       </div>
