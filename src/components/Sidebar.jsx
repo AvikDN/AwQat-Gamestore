@@ -1,131 +1,281 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  FaUser, 
+  FaGamepad, 
+  FaLayerGroup, 
+  FaStar, 
+  FaClipboardList, 
+  FaShoppingCart, 
+  FaUsers, 
+  FaSignOutAlt,
+  FaHome,
+  FaBars,
+  FaTimes
+} from 'react-icons/fa';
+import toast, { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import logoImg from '../assets/Awqat_full.png'; 
+import defaultImg from '../assets/pics/profile_icon.svg';
+import { useAuthContext } from '../contexts/AuthContext';
+
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logoutUser } = useAuthContext();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
-  // Helper to check active state based on current URL
   const isActive = (path) => location.pathname === path;
 
+  const getCurrentTabDetails = () => {
+    const currentItem = navItems.find((item) => isActive(item.path));
+    return currentItem ? currentItem : { name: 'Dashboard', icon: <FaUser className="text-xl" /> };
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    logoutUser();
+    setIsMenuOpen(false);
+    navigate('/');
+
+    const isMobile = window.innerWidth < 768;
+
+    if (isMobile) {
+      toast.success('Successfully logged out', {
+        position: 'bottom-right',
+        style: {
+          background: '#1a1a1a',
+          color: '#fff',
+          border: '1px solid #333',
+        },
+        iconTheme: {
+          primary: '#2ecc71',
+          secondary: '#1a1a1a',
+        },
+      });
+    } else {
+      toast.custom((t) => (
+        <div
+          className={`${
+            t.visible ? 'animate-enter' : 'animate-leave'
+          } max-w-sm w-full bg-[#1a1a1a] shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] border border-[#333] rounded-2xl pointer-events-auto flex overflow-hidden`}
+        >
+          <div className="flex-1 w-0 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#2ecc71]/10 border border-[#2ecc71]/30 flex items-center justify-center text-[#2ecc71] font-bold text-lg">
+                ✓
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-white">
+                  Logged Out
+                </p>
+                <p className="mt-0.5 text-xs text-gray-400">
+                  You have successfully signed out of AwQat.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex border-l border-[#333]">
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="w-full border border-transparent rounded-none p-4 flex items-center justify-center text-xs font-bold text-[#2ecc71] hover:bg-white/5 transition-colors focus:outline-none"
+            >
+              DISMISS
+            </button>
+          </div>
+        </div>
+      ), {
+        position: 'bottom-right',
+        duration: 4000,
+      });
+    }
+  };
+
   const navItems = [
-    { 
-      name: 'Profile', 
-      path: '/dashboard', 
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-        </svg>
-      ) 
-    },
-    { 
-      name: 'Games', 
-      path: '/games', 
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16l6-6 4 4 8-8" />
-        </svg>
-      ) 
-    },
-    { 
-      name: 'Categories', 
-      path: '/categories', 
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-        </svg>
-      ) 
-    },
-    { 
-      name: 'Review', 
-      path: '/review', 
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <line x1="3" y1="10" x2="21" y2="10" />
-        </svg>
-      ) 
-    },
-    { 
-      name: 'Orders', 
-      path: '/orders', 
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ) 
-    },
-    { 
-      name: 'Cart', 
-      path: '/cart', 
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ) 
-    },
-    { 
-      name: 'Users', 
-      path: '/users', 
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ) 
-    },
+    { name: 'Profile', path: '/dashboard', icon: <FaUser className="text-xl" /> },
+    { name: 'Games', path: '/dashboard/games', icon: <FaGamepad className="text-xl" /> },
+    { name: 'Categories', path: '/dashboard/categories', icon: <FaLayerGroup className="text-xl" /> },
+    { name: 'Review', path: '/dashboard/review', icon: <FaStar className="text-xl" /> },
+    { name: 'Orders', path: '/dashboard/orders', icon: <FaClipboardList className="text-xl" /> },
+    { name: 'Cart', path: '/dashboard/cart', icon: <FaShoppingCart className="text-xl" /> },
+    { name: 'Users', path: '/dashboard/users', icon: <FaUsers className="text-xl" /> },
   ];
 
+  const currentTab = getCurrentTabDetails();
+
   return (
-    <aside className="w-[280px] h-screen bg-[#121212] flex flex-col p-6 border-r border-[#222] shrink-0 sticky top-0">
-      
-      {/* Logo Section */}
-      <div className="flex items-center gap-3 mb-10 pl-2">
-        <img  src={logoImg}/>
-      </div>
+    <>
+      <Toaster />
 
-      {/* User Profile Card */}
-      <div className="w-full bg-[#a3a3a3] rounded-2xl p-4 flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 bg-[#333] rounded-full flex items-center justify-center shrink-0">
-          <svg className="w-8 h-8 text-[#a3a3a3]" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-          </svg>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-black font-extrabold text-lg leading-tight">User</span>
-          <span className="text-black/80 font-medium text-xs">User@gmail.com</span>
-        </div>
-      </div>
+      {/* Desktop Sidebar */}
+      <motion.aside 
+        initial={{ x: -50, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="hidden md:flex w-[280px] h-screen bg-[#121212] flex-col p-6 border-r border-[#222] shrink-0 sticky top-0"
+      >
+        
+        {/* Logo Section */}
+        <Link to="/" className="flex items-center justify-center mb-10 w-full hover:opacity-80 transition-opacity">
+          <motion.img 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            src={logoImg} 
+            alt="AwQat Logo" 
+            className="h-11 object-contain" 
+          />
+        </Link>
 
-      {/* Navigation Links */}
-      <nav className="flex flex-col gap-2">
-        {navItems.map((item) => (
+        {/* User Profile Card */}
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          transition={{ duration: 0.2 }}
+          className="w-full bg-[#a3a3a3] rounded-2xl p-4 flex items-center gap-4 mb-8 shadow-md"
+        >
+          <div className="w-12 h-12 bg-[#1a1a1a] border-2 border-[#2ecc71]/50 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+            <img 
+              src={user?.profile?.avatar || defaultImg} 
+              alt={user?.profile?.full_name || 'User'} 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="flex flex-col overflow-hidden">
+            <span className="text-black font-extrabold text-lg leading-tight truncate">
+              {user?.profile?.full_name || user?.username || 'User'}
+            </span>
+            <span className="text-black/80 font-medium text-xs truncate">
+              {user?.email || 'Guest'}
+            </span>
+          </div>
+        </motion.div>
+
+        {/* Navigation Links */}
+        <nav className="flex flex-col gap-2">
+          {navItems.map((item) => {
+            const active = isActive(item.path);
+            return (
+              <motion.div key={item.name} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
+                <Link
+                  to={item.path}
+                  className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-colors ${
+                    active
+                      ? 'bg-[#222222] text-[#2ecc71] font-bold'
+                      : 'text-gray-300 hover:bg-[#222222]/50 hover:text-[#2ecc71] font-semibold'
+                  }`}
+                >
+                  {item.icon}
+                  <span className="text-[15px]">{item.name}</span>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </nav>
+
+        {/* Log Out Button */}
+        <motion.button 
+          onClick={handleLogout}
+          whileHover={{ x: 4 }}
+          whileTap={{ scale: 0.98 }}
+          className="mt-auto flex items-center gap-3 px-4 py-3 text-red-500 font-extrabold hover:bg-red-500/10 rounded-xl transition-colors w-full cursor-pointer"
+        >
+          <span className="text-[17px]">Log Out</span>
+          <FaSignOutAlt className="w-6 h-6 ml-auto" />
+        </motion.button>
+
+      </motion.aside>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <motion.nav 
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#121212] border-t border-[#222] flex items-center justify-between px-6 z-50 shadow-2xl"
+      >
+        
+        {/* Left: Home Button */}
+        <motion.div whileTap={{ scale: 0.9 }}>
           <Link
-            key={item.name}
-            to={item.path}
-            className={`flex items-center gap-4 px-4 py-3.5 rounded-xl transition-colors ${
-              isActive(item.path) || (item.name === 'Overview' && location.pathname === '/')
-                ? 'bg-[#222222] text-white font-bold'
-                : 'text-gray-300 hover:bg-[#222222]/50 font-semibold'
-            }`}
+            to="/"
+            className="flex flex-col items-center justify-center text-gray-400 hover:text-white transition-colors"
           >
-            {item.icon}
-            <span className="text-[15px]">{item.name}</span>
+            <FaHome className="text-xl" />
+            <span className="text-[10px] mt-1 font-medium">Home</span>
           </Link>
-        ))}
-      </nav>
+        </motion.div>
 
-      {/* Log Out Button */}
-      <button className="mt-auto flex items-center gap-3 px-4 py-3 text-white font-extrabold hover:text-gray-300 transition-colors w-max">
-        <span className="text-[17px]">Log Out</span>
-        <svg className="w-6 h-6 text-[#fbfbfd]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-        </svg>
-      </button>
+        {/* Middle: Current Page Icon & Name Indicator */}
+        <div className="flex flex-col items-center justify-center text-[#2ecc71]">
+          {currentTab.icon}
+          <span className="text-[10px] mt-1 font-bold tracking-wide text-white">
+            {currentTab.name}
+          </span>
+        </div>
 
-    </aside>
+        {/* Right: Drop-up Menu Trigger */}
+        <div className="relative" ref={menuRef}>
+          <AnimatePresence>
+            {isMenuOpen && (
+              <motion.div 
+                initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute bottom-16 right-0 w-56 bg-[#1a1a1a] border border-[#333] rounded-2xl shadow-2xl py-3 flex flex-col gap-1 z-50 backdrop-blur-xl"
+              >
+                {navItems.map((item) => {
+                  const active = isActive(item.path);
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.path}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                        active ? 'text-[#2ecc71] bg-white/5 font-bold' : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      {item.icon}
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+
+                <div className="border-t border-[#333] my-1 pt-1">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-500/10 w-full transition-colors text-left cursor-pointer"
+                  >
+                    <FaSignOutAlt className="text-xl" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            whileTap={{ scale: 0.9 }}
+            className="flex flex-col items-center justify-center text-gray-300 focus:outline-none"
+            aria-label="Toggle Menu"
+          >
+            <div className="w-11 h-11 rounded-full bg-[#222222] border border-[#333] flex items-center justify-center shadow-sm">
+              {isMenuOpen ? <FaTimes className="text-lg text-white" /> : <FaBars className="text-lg text-white" />}
+            </div>
+            <span className="text-[10px] mt-1 font-medium text-gray-300">Menu</span>
+          </motion.button>
+        </div>
+
+      </motion.nav>
+    </>
   );
 }

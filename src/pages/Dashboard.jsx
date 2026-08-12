@@ -1,266 +1,303 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaEdit, FaSave, FaTimes, FaImage, FaUser, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaInfoCircle } from 'react-icons/fa';
+import { FaEdit, FaSave, FaTimes, FaImage, FaUser } from 'react-icons/fa';
+import { useAuthContext } from '../contexts/AuthContext';
+import apiClient from '../services/api-client';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+};
 
 const Dashboard = () => {
+    const { user } = useAuthContext();
     const [editMode, setEditMode] = useState(false);
     const [saving, setSaving] = useState(false);
 
-    // Mock static user data matching your theme/aesthetic
     const [formData, setFormData] = useState({
-        username: "awqat.admin",
-        email: "awqat@example.com",
-        full_name: "AwQat Admin",
-        phone_number: "+8801234567890",
-        address: "Chattogram, Bangladesh",
-        date_of_birth: "2000-01-01",
-        bio: "Admin of AwQat Gamestore"
+        username: "",
+        email: "",
+        full_name: "",
+        phone_number: "",
+        address: "",
+        date_of_birth: "",
+        bio: "",
+        avatar: null
     });
+
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                username: user.username || "",
+                email: user.email || "",
+                full_name: user.profile?.full_name || "",
+                phone_number: user.profile?.phone_number || "",
+                address: user.profile?.address || "",
+                date_of_birth: user.profile?.date_of_birth || "",
+                bio: user.profile?.bio || "",
+                avatar: user.profile?.avatar || null
+            });
+        }
+    }, [user]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSave = (e) => {
+    const handleImageChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setFormData({ 
+                ...formData, 
+                avatarFile: e.target.files[0], 
+                avatar: URL.createObjectURL(e.target.files[0]) 
+            });
+        }
+    };
+
+    const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
-        setTimeout(() => {
-            setSaving(false);
+        
+        try {
+            const submitData = new FormData();
+            submitData.append('username', formData.username);
+            submitData.append('email', formData.email);
+            submitData.append('profile.full_name', formData.full_name);
+            submitData.append('profile.phone_number', formData.phone_number);
+            submitData.append('profile.address', formData.address);
+            submitData.append('profile.date_of_birth', formData.date_of_birth);
+            submitData.append('profile.bio', formData.bio);
+            
+            if (formData.avatarFile) {
+                submitData.append('profile.avatar', formData.avatarFile);
+            }
+
+            await apiClient.patch(`/users/${user.id}/`, submitData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
             setEditMode(false);
-        }, 1000);
-    };
-
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
-    };
-
-    const cardVariants = {
-        hidden: { opacity: 0, scale: 0.95 },
-        visible: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut" } },
+        } catch (error) {
+            console.error("Error updating profile:", error);
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
         <motion.div 
-            className="w-full space-y-6 text-white"
+            className="w-full min-h-full text-white flex flex-col items-center justify-start py-4 sm:py-8 px-3 sm:px-6"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
         >
-            {/* Header */}
+            {/* Encapsulating Box Wrapper with responsive padding and spacing */}
             <motion.div 
-                className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4"
+                className="w-full max-w-3xl bg-[#121212]/90 backdrop-blur-md border border-[#333] rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-10 shadow-2xl relative"
                 variants={itemVariants}
             >
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
+                {/* My Dashboard Heading & Edit Button Top Row (Stacked nicely on mobile to prevent button overlap) */}
+                <motion.div 
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-[#333]"
+                    variants={itemVariants}
+                >
+                    <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
                         My Dashboard
                     </h1>
-                    <p className="text-gray-400 mt-1">
-                        Welcome back, {formData.full_name}!
-                    </p>
-                </div>
-                <motion.button
-                    onClick={() => setEditMode(!editMode)}
-                    className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 w-full sm:w-auto ${
-                        editMode 
-                            ? "bg-red-500/10 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white" 
-                            : "bg-[#2ecc71] text-black hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)]"
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                >
-                    {editMode ? <><FaTimes /> Cancel</> : <><FaEdit /> Edit Profile</>}
-                </motion.button>
-            </motion.div>
+                    <motion.button
+                        onClick={() => setEditMode(!editMode)}
+                        className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all duration-300 shadow-md cursor-pointer w-full sm:w-auto ${
+                            editMode 
+                                ? "bg-red-500/20 border border-red-500 text-red-400 hover:bg-red-500 hover:text-white" 
+                                : "bg-[#cccccc] text-black hover:bg-white"
+                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        {editMode ? <><FaTimes /> Cancel</> : <><FaEdit /> Edit Profile</>}
+                    </motion.button>
+                </motion.div>
 
-            {/* Profile Section Card */}
-            <motion.div 
-                className="bg-[#1a1a1a] p-6 md:p-8 rounded-3xl border border-[#333] shadow-2xl relative overflow-hidden"
-                variants={cardVariants}
-            >
-                <div className="absolute -top-24 -right-24 w-72 h-72 bg-[#2ecc71]/5 rounded-full blur-3xl pointer-events-none"></div>
-
-                <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start relative z-10">
-                    
-                    {/* Avatar Block */}
-                    <div className="flex flex-col items-center">
-                        <motion.div 
-                            className="relative group"
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <div className="w-32 h-32 md:w-36 md:h-36 rounded-2xl md:rounded-[2rem] bg-white/5 border-2 border-[#333] flex items-center justify-center overflow-hidden shadow-xl">
-                                <FaUser className="w-16 h-16 text-gray-500" />
-                            </div>
-                            {editMode && (
-                                <label className="absolute -bottom-2 -right-2 bg-[#2ecc71] text-black p-3 rounded-full cursor-pointer shadow-lg hover:bg-[#27ae60] transition-transform hover:scale-110">
-                                    <FaImage className="w-4 h-4" />
-                                    <input type="file" accept="image/*" className="hidden" />
-                                </label>
-                            )}
-                        </motion.div>
-                    </div>
-
-                    {/* Content / Form Block */}
-                    <div className="flex-1 w-full max-w-2xl">
-                        <AnimatePresence mode="wait">
-                            {!editMode ? (
-                                <motion.div 
-                                    key="view-mode"
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 20 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-1">
-                                        {formData.full_name}
-                                    </h2>
-                                    <p className="text-[#2ecc71] font-semibold mb-6">
-                                        @{formData.username}
-                                    </p>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
-                                        <div className="bg-black/40 border border-[#333] p-4 rounded-xl flex items-center gap-3">
-                                            <FaUser className="text-[#2ecc71]" />
-                                            <div>
-                                                <span className="block text-xs text-gray-500 font-bold uppercase">Username</span>
-                                                <span className="font-semibold text-white">{formData.username}</span>
-                                            </div>
-                                        </div>
-                                        <div className="bg-black/40 border border-[#333] p-4 rounded-xl flex items-center gap-3">
-                                            <FaPhone className="text-[#2ecc71]" />
-                                            <div>
-                                                <span className="block text-xs text-gray-500 font-bold uppercase">Phone</span>
-                                                <span className="font-semibold text-white">{formData.phone_number}</span>
-                                            </div>
-                                        </div>
-                                        <div className="bg-black/40 border border-[#333] p-4 rounded-xl flex items-center gap-3">
-                                            <FaMapMarkerAlt className="text-[#2ecc71]" />
-                                            <div>
-                                                <span className="block text-xs text-gray-500 font-bold uppercase">Address</span>
-                                                <span className="font-semibold text-white">{formData.address}</span>
-                                            </div>
-                                        </div>
-                                        <div className="bg-black/40 border border-[#333] p-4 rounded-xl flex items-center gap-3">
-                                            <FaCalendarAlt className="text-[#2ecc71]" />
-                                            <div>
-                                                <span className="block text-xs text-gray-500 font-bold uppercase">Date of Birth</span>
-                                                <span className="font-semibold text-white">{formData.date_of_birth}</span>
-                                            </div>
-                                        </div>
-                                        <div className="md:col-span-2 bg-black/40 border border-[#333] p-4 rounded-xl flex items-start gap-3">
-                                            <FaInfoCircle className="text-[#2ecc71] mt-1" />
-                                            <div>
-                                                <span className="block text-xs text-gray-500 font-bold uppercase">Bio</span>
-                                                <span className="font-semibold text-white">{formData.bio}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
+                {/* Profile Picture and Username Row (Stacked on mobile, aligned on desktop) */}
+                <motion.div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-8 text-center sm:text-left" variants={itemVariants}>
+                    <div className="relative group shrink-0">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-gray-400 bg-[#1a1a1a] flex items-center justify-center overflow-hidden shadow-xl">
+                            {formData.avatar ? (
+                                <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                                <motion.form 
-                                    key="edit-mode"
-                                    onSubmit={handleSave}
-                                    className="space-y-4"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs text-gray-400 font-bold uppercase mb-1">Username</label>
-                                            <input 
-                                                type="text" 
-                                                name="username" 
-                                                value={formData.username} 
-                                                onChange={handleChange}
-                                                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#2ecc71] outline-none transition"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-400 font-bold uppercase mb-1">Email</label>
-                                            <input 
-                                                type="email" 
-                                                name="email" 
-                                                value={formData.email} 
-                                                onChange={handleChange}
-                                                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#2ecc71] outline-none transition"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-400 font-bold uppercase mb-1">Full Name</label>
-                                            <input 
-                                                type="text" 
-                                                name="full_name" 
-                                                value={formData.full_name} 
-                                                onChange={handleChange}
-                                                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#2ecc71] outline-none transition"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-400 font-bold uppercase mb-1">Phone Number</label>
-                                            <input 
-                                                type="text" 
-                                                name="phone_number" 
-                                                value={formData.phone_number} 
-                                                onChange={handleChange}
-                                                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#2ecc71] outline-none transition"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-gray-400 font-bold uppercase mb-1">Date of Birth</label>
-                                            <input 
-                                                type="date" 
-                                                name="date_of_birth" 
-                                                value={formData.date_of_birth} 
-                                                onChange={handleChange}
-                                                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#2ecc71] outline-none transition"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-xs text-gray-400 font-bold uppercase mb-1">Address</label>
-                                            <input 
-                                                type="text" 
-                                                name="address" 
-                                                value={formData.address} 
-                                                onChange={handleChange}
-                                                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#2ecc71] outline-none transition"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2">
-                                            <label className="block text-xs text-gray-400 font-bold uppercase mb-1">Bio</label>
-                                            <textarea 
-                                                name="bio" 
-                                                rows="3"
-                                                value={formData.bio} 
-                                                onChange={handleChange}
-                                                className="w-full bg-black border border-[#333] rounded-xl px-4 py-3 text-white focus:border-[#2ecc71] outline-none transition resize-none"
-                                            ></textarea>
+                                <FaUser className="w-10 h-10 text-gray-400" />
+                            )}
+                        </div>
+                        {editMode && (
+                            <label className="absolute -bottom-1 -right-1 bg-[#2ecc71] text-black p-2 rounded-full cursor-pointer shadow-lg hover:bg-[#27ae60] transition-transform hover:scale-110">
+                                <FaImage className="w-3.5 h-3.5" />
+                                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                            </label>
+                        )}
+                    </div>
+                    <div className="flex flex-col justify-center overflow-hidden w-full">
+                        <span className="text-xl sm:text-3xl font-bold text-white tracking-wide truncate">
+                            {formData.full_name || formData.username || "User"}
+                        </span>
+                        <span className="text-sm text-gray-400 mt-1 truncate">
+                            {formData.email || "User@gmail.com"}
+                        </span>
+                    </div>
+                </motion.div>
+
+                <AnimatePresence mode="wait">
+                    {!editMode ? (
+                        /* View Mode Layout responsive for all screens */
+                        <motion.div 
+                            key="view-mode"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            className="space-y-6 sm:space-y-8"
+                        >
+                            {/* Account Info Section */}
+                            <div className="space-y-3 sm:space-y-4">
+                                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide">
+                                    Account Info:
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs sm:text-sm text-gray-300 font-medium">User Name:</span>
+                                        <div className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white shadow-inner truncate">
+                                            {formData.full_name || formData.username || "User full"}
                                         </div>
                                     </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs sm:text-sm text-gray-300 font-medium">Email:</span>
+                                        <div className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white shadow-inner truncate">
+                                            {formData.email || "User@gmail.com"}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                                    <motion.button
-                                        type="submit"
-                                        disabled={saving}
-                                        className="w-full md:w-auto mt-4 px-8 py-3 bg-[#2ecc71] hover:bg-[#27ae60] text-black font-extrabold rounded-xl shadow-[0_0_15px_rgba(46,204,113,0.5)] flex items-center justify-center gap-2 transition-all"
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                    >
-                                        <FaSave /> {saving ? "Saving..." : "Save Changes"}
-                                    </motion.button>
-                                </motion.form>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                            {/* Personal Detail Section */}
+                            <div className="space-y-3 sm:space-y-4">
+                                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide">
+                                    Personal Detail:
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs sm:text-sm text-gray-300 font-medium">Phone Number:</span>
+                                        <div className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white shadow-inner truncate">
+                                            {formData.phone_number || "0181*********0"}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <span className="text-xs sm:text-sm text-gray-300 font-medium">Address:</span>
+                                        <div className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white shadow-inner truncate">
+                                            {formData.address || "Chattogram, Bangladesh."}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 sm:col-span-2">
+                                        <span className="text-xs sm:text-sm text-gray-300 font-medium">Date of Birth:</span>
+                                        <div className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white shadow-inner sm:max-w-sm truncate">
+                                            {formData.date_of_birth || "28/08/2000"}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        /* Edit Mode Form Inputs responsive for all screens */
+                        <motion.form 
+                            key="edit-mode"
+                            onSubmit={handleSave}
+                            className="space-y-6"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div className="space-y-4">
+                                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide">
+                                    Account Info:
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs sm:text-sm text-gray-300 font-medium">User Name:</label>
+                                        <input 
+                                            type="text" 
+                                            name="full_name" 
+                                            value={formData.full_name} 
+                                            onChange={handleChange}
+                                            className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white focus:border-[#2ecc71] outline-none shadow-inner"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs sm:text-sm text-gray-300 font-medium">Email:</label>
+                                        <input 
+                                            type="email" 
+                                            name="email" 
+                                            value={formData.email} 
+                                            onChange={handleChange}
+                                            className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white focus:border-[#2ecc71] outline-none shadow-inner"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
 
-                </div>
+                            <div className="space-y-4">
+                                <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-wide">
+                                    Personal Detail:
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs sm:text-sm text-gray-300 font-medium">Phone Number:</label>
+                                        <input 
+                                            type="text" 
+                                            name="phone_number" 
+                                            value={formData.phone_number} 
+                                            onChange={handleChange}
+                                            className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white focus:border-[#2ecc71] outline-none shadow-inner"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs sm:text-sm text-gray-300 font-medium">Address:</label>
+                                        <input 
+                                            type="text" 
+                                            name="address" 
+                                            value={formData.address} 
+                                            onChange={handleChange}
+                                            className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white focus:border-[#2ecc71] outline-none shadow-inner"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 sm:col-span-2">
+                                        <label className="text-xs sm:text-sm text-gray-300 font-medium">Date of Birth:</label>
+                                        <input 
+                                            type="date" 
+                                            name="date_of_birth" 
+                                            value={formData.date_of_birth} 
+                                            onChange={handleChange}
+                                            className="w-full bg-[#1a1a1a] border border-gray-400 rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white focus:border-[#2ecc71] outline-none shadow-inner sm:max-w-sm"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <motion.button
+                                type="submit"
+                                disabled={saving}
+                                className="w-full sm:w-auto mt-6 px-8 py-3 bg-[#cccccc] hover:bg-white text-black font-bold text-lg rounded-md shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <FaSave /> {saving ? "Saving..." : "Save Changes"}
+                            </motion.button>
+                        </motion.form>
+                    )}
+                </AnimatePresence>
             </motion.div>
         </motion.div>
     );

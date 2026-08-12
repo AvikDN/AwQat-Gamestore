@@ -63,7 +63,7 @@ export default function AboutUs() {
   ];
 
   return (
-    <div className="bg-black min-h-screen w-full text-white overflow-hidden selection:bg-[#2ecc71] selection:text-black">
+    <div className=" min-h-screen w-full text-white overflow-hidden selection:bg-[#2ecc71] selection:text-black">
       
       {/* Hero Section */}
       <section className="relative pt-32 pb-16 md:pt-40 md:pb-20">
@@ -98,7 +98,7 @@ export default function AboutUs() {
       </section>
 
       {/* Mission Section */}
-      <section className="py-12 bg-black">
+      <section className="py-12 ">
         <motion.div
           className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
           initial="hidden"

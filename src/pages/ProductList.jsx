@@ -132,7 +132,6 @@ export default function ProductList() {
   };
 
   // Client-side filtering for the current page of results
-  // (Search and sorting are now handled by the backend)
   let processedProducts = products.filter(product => {
     const originalPrice = parseFloat(product.price);
     const discountValue = parseFloat(product.discount || 0);
@@ -170,7 +169,7 @@ export default function ProductList() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="w-full max-w-[1920px] mx-auto py-12 md:py-20 px-4 md:px-8 xl:px-12 overflow-hidden bg-[#121212]">
+    <section ref={sectionRef} className="w-full max-w-[1920px] mx-auto pt-32 pb-16 md:pt-36 md:pb-20 px-4 md:px-8 xl:px-12 overflow-hidden">
       
       <style>
         {`
@@ -203,7 +202,7 @@ export default function ProductList() {
 
       <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start">
         
-        <aside className="w-full lg:w-[280px] xl:w-[320px] flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-8 mt-0">
+        <aside className="w-full lg:w-[280px] xl:w-[320px] flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-28 mt-0">
           
           {/* Box 1: Sort By */}
           <div className="w-full bg-[#1a1a1a] rounded-[2rem] p-6 sm:p-8 flex flex-col gap-4">
@@ -332,7 +331,7 @@ export default function ProductList() {
               
               <button 
                 onClick={handleResetFilters}
-                className="mt-4 w-full py-4 bg-[#b0b0b0] hover:bg-white text-black font-extrabold rounded-xl transition-colors text-sm xl:text-base"
+                className="mt-4 w-full py-4 bg-[#b0b0b0] hover:bg-white text-black font-extrabold rounded-xl transition-colors text-sm xl:text-base cursor-pointer"
               >
                 Reset Filters
               </button>
@@ -424,7 +423,7 @@ export default function ProductList() {
 
                     </Link>
 
-                    <button className="mt-auto w-full py-3.5 bg-[#b0b0b0] hover:bg-[#2ecc71] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 rounded-xl flex items-center justify-center group">
+                    <button className="mt-auto w-full py-3.5 bg-[#b0b0b0] hover:bg-[#2ecc71] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 rounded-xl flex items-center justify-center group cursor-pointer">
                       <svg className="w-6 h-6 text-black group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>

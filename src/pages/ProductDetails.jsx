@@ -65,7 +65,7 @@ export default function ProductDetails() {
 
   if (loading) {
     return (
-      <div className="bg-black min-h-screen w-full text-white">
+      <div className="bg-transparent min-h-screen w-full text-white">
         <div className="max-w-[1400px] mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-pulse">
             
@@ -97,7 +97,7 @@ export default function ProductDetails() {
       <motion.div 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
-        className="bg-black min-h-screen w-full flex items-center justify-center text-red-500 font-bold text-xl"
+        className="bg-transparent min-h-screen w-full flex items-center justify-center text-red-500 font-bold text-xl"
       >
         Product not found.
       </motion.div>
@@ -117,7 +117,7 @@ export default function ProductDetails() {
   const totalPrice = unitFinalPrice * quantity;
 
   return (
-    <div className="bg-black min-h-screen w-full text-white selection:bg-[#2ecc71] selection:text-black">
+    <div className="bg-transparent min-h-screen w-full text-white selection:bg-[#2ecc71] selection:text-black">
       
       <div className="max-w-[1400px] mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
         

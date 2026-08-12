@@ -49,7 +49,7 @@ export default function PnP() {
   ];
 
   return (
-    <div className="bg-black min-h-screen w-full text-white overflow-hidden selection:bg-[#2ecc71] selection:text-black">
+    <div className="min-h-screen w-full text-white overflow-hidden selection:bg-[#2ecc71] selection:text-black">
       
       {/* Header Section */}
       <section className="relative pt-32 pb-12 md:pt-40 md:pb-16 border-b border-[#333]">
