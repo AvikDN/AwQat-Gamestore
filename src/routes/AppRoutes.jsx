@@ -12,6 +12,9 @@ import TOS from "../pages/TOS";
 import PrivateRoute from "../components/PrivateRoute";
 import Dashboard from "../pages/Dashboard";
 import Categories from "../pages/Categories";
+import CategoryGames from "../pages/CategoryGames";
+import DashCategories from "../pages/DashCategories";
+import DashOrder from "../pages/DashOrder";
 import Cart from "../pages/Cart";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
@@ -27,6 +30,7 @@ const AppRoutes = () => {
         <Route path="/products" element={<ProductList />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/categories" element={<Categories />} />
+        <Route path="/category/:id" element={<CategoryGames />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
@@ -46,7 +50,8 @@ const AppRoutes = () => {
         >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/cart" element={<Cart />} />
-        {/* <Route path="/dashboard/categories" element={<Categories />} /> */}
+        <Route path="/dashboard/categories" element={<DashCategories />} />
+        <Route path="/dashboard/orders" element={<DashOrder />} />
           
       </Route>
     </Routes>

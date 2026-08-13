@@ -23,8 +23,6 @@ const itemVariants = {
 export default function FeaturedProducts() {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  const [showAll, setShowAll] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10); 
 
   useEffect(() => {
@@ -52,7 +50,11 @@ export default function FeaturedProducts() {
     
     apiClient.get('/games/')
       .then(response => {
-        setProducts(response.data.results);
+        // Filter out upcoming/inactive games and games with price 0
+        const activeProducts = response.data.results.filter(
+          product => product.active && Number(product.price) > 0
+        );
+        setProducts(activeProducts);
         setIsLoading(false);
       })
       .catch(error => {
@@ -61,7 +63,7 @@ export default function FeaturedProducts() {
       });
   }, []);
 
-  const displayedProducts = showAll ? products : products.slice(0, visibleCount);
+  const displayedProducts = products.slice(0, visibleCount);
 
   return (
     <section className="w-full max-w-[1920px] mx-auto py-12 md:py-20 px-4 md:px-8 xl:px-12 overflow-visible">
@@ -89,7 +91,7 @@ export default function FeaturedProducts() {
       </div>
 
       <motion.div 
-        key={isLoading ? 'loading' : `loaded-${showAll}`}
+        key={isLoading ? 'loading' : 'loaded'}
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
@@ -172,7 +174,7 @@ export default function FeaturedProducts() {
 
                   </Link>
 
-                  <button className="mt-auto w-full py-3 sm:py-4 md:py-5 bg-[#b0b0b0] hover:bg-[#2ecc71] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 rounded-xl md:rounded-2xl flex items-center justify-center group">
+                  <button className="mt-auto w-full py-3 sm:py-4 md:py-5 bg-[#b0b0b0] hover:bg-[#2ecc71] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 rounded-xl md:rounded-2xl flex items-center justify-center group cursor-pointer">
                     <svg className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 text-black group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
@@ -183,24 +185,6 @@ export default function FeaturedProducts() {
             })
         }
       </motion.div>
-
-      {!isLoading && !showAll && products.length > visibleCount && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="flex justify-center mt-10 md:mt-16 w-full"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowAll(true)}
-            className="px-8 py-3 bg-transparent border-2 border-[#2ecc71] text-[#2ecc71] font-bold text-lg md:text-xl rounded-full hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.8)] transition-colors duration-300"
-          >
-            See More
-          </motion.button>
-        </motion.div>
-      )}
 
     </section>
   );

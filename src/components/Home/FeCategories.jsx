@@ -101,7 +101,8 @@ export default function Categories() {
                     }}
                     whileTap={{ scale: 0.95 }}
                     style={{ rotate: baseRotation }}
-                    className="flex flex-col p-3 pb-8 bg-[#8c8c8c] rounded-lg shadow-xl cursor-pointer"
+                    onClick={() => navigate(`/category/${cat.id}`)}
+                    className="flex flex-col p-3 pb-8 bg-[#8c8c8c] hover:bg-[#2ecc71] transition-colors rounded-lg shadow-xl cursor-pointer group"
                   >
                     <div className="bg-white aspect-[4/3] rounded flex items-center justify-center shadow-inner overflow-hidden">
                       <img 
@@ -110,7 +111,7 @@ export default function Categories() {
                         className="w-16 h-16 object-contain" 
                       />
                     </div>
-                    <div className="text-center mt-6 font-extrabold text-xl text-black tracking-wide">
+                    <div className="text-center mt-6 font-extrabold text-xl text-black tracking-wide group-hover:text-black">
                       {cat.name}
                     </div>
                   </motion.div>
@@ -128,7 +129,7 @@ export default function Categories() {
                   transition: { type: "spring", stiffness: 300, damping: 20 } 
                 }}
                 whileTap={{ scale: 0.95 }}
-                style={{ rotate: rotations[7] }} // Always use the 8th rotation value
+                style={{ rotate: rotations[7] }}
                 onClick={() => navigate('/categories/')}
                 className="flex flex-col p-3 pb-8 bg-[#2ecc71] rounded-lg shadow-xl cursor-pointer"
               >

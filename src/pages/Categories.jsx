@@ -116,7 +116,7 @@ export default function Categories() {
                 whileHover={{ y: -10 }}
                 className="group bg-[#1a1a1a] border border-[#333] hover:border-[#2ecc71]/50 rounded-3xl overflow-hidden flex flex-col h-full shadow-lg hover:shadow-[0_10px_30px_rgba(46,204,113,0.15)] transition-all duration-300 cursor-pointer"
               >
-                <Link to={`/products?category=${category.id}`} className="flex flex-col h-full">
+                <Link to={`/category/${category.id}`} className="flex flex-col h-full">
                   <div className="w-full h-48 bg-black relative overflow-hidden">
                     {category.image ? (
                       <img 

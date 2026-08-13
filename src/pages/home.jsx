@@ -1,6 +1,6 @@
 import React from 'react';
 import Upcoming from '../components/Home/Upcoming';
-import Categories from '../components/Home/Categories';
+import FeCategories from '../components/Home/FeCategories';
 import FeProducts from '../components/Home/FeProducts';
 import Offers from '../components/Home/Offers';
 import Reviews from '../components/Home/Reviews'; 
@@ -23,7 +23,7 @@ const Home = () => {
                         </svg>
                     </button>
                 </div>
-                <Categories/>
+                <FeCategories/>
                 <FeProducts />
                 <Offers/> 
                 <Reviews/> 
