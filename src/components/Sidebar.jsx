@@ -11,7 +11,10 @@ import {
   FaSignOutAlt,
   FaHome,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaHeart,
+  FaHistory,
+  FaCompass
 } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,6 +30,29 @@ export default function Sidebar() {
   const menuRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
+  const isAdmin = user?.groups?.includes("Admin");
+
+  const adminNavItems = [
+    { name: 'Profile', path: '/dashboard', icon: <FaUser className="text-xl" /> },
+    { name: 'Games', path: '/dashboard/games', icon: <FaGamepad className="text-xl" /> },
+    { name: 'Categories', path: '/dashboard/categories', icon: <FaLayerGroup className="text-xl" /> },
+    { name: 'Review', path: '/dashboard/review', icon: <FaStar className="text-xl" /> },
+    { name: 'Orders', path: '/dashboard/orders', icon: <FaClipboardList className="text-xl" /> },
+    { name: 'Cart', path: '/dashboard/cart', icon: <FaShoppingCart className="text-xl" /> },
+    { name: 'Users', path: '/dashboard/users', icon: <FaUsers className="text-xl" /> },
+    { name: 'Wishlists', path: '/dashboard/wishlists', icon: <FaHeart className="text-xl" /> },
+  ];
+
+  const customerNavItems = [
+    { name: 'Profile', path: '/dashboard', icon: <FaUser className="text-xl" /> },
+    { name: 'Browse', path: '/products', icon: <FaCompass className="text-xl" /> },
+    { name: 'Cart', path: '/dashboard/cart', icon: <FaShoppingCart className="text-xl" /> },
+    { name: 'Orders', path: '/dashboard/orders', icon: <FaClipboardList className="text-xl" /> },
+    { name: 'Wishlists', path: '/dashboard/wishlists', icon: <FaHeart className="text-xl" /> },
+    { name: 'History', path: '/dashboard/history', icon: <FaHistory className="text-xl" /> },
+  ];
+
+  const navItems = isAdmin ? adminNavItems : customerNavItems;
 
   const getCurrentTabDetails = () => {
     const currentItem = navItems.find((item) => isActive(item.path));
@@ -101,16 +127,6 @@ export default function Sidebar() {
     }
   };
 
-  const navItems = [
-    { name: 'Profile', path: '/dashboard', icon: <FaUser className="text-xl" /> },
-    { name: 'Games', path: '/dashboard/games', icon: <FaGamepad className="text-xl" /> },
-    { name: 'Categories', path: '/dashboard/categories', icon: <FaLayerGroup className="text-xl" /> },
-    { name: 'Review', path: '/dashboard/review', icon: <FaStar className="text-xl" /> },
-    { name: 'Orders', path: '/dashboard/orders', icon: <FaClipboardList className="text-xl" /> },
-    { name: 'Cart', path: '/dashboard/cart', icon: <FaShoppingCart className="text-xl" /> },
-    { name: 'Users', path: '/dashboard/users', icon: <FaUsers className="text-xl" /> },
-  ];
-
   const currentTab = getCurrentTabDetails();
 
   return (
@@ -122,11 +138,11 @@ export default function Sidebar() {
         initial={{ x: -50, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="hidden md:flex w-[280px] h-screen bg-[#121212] flex-col p-6 border-r border-[#222] shrink-0 sticky top-0"
+        className="hidden md:flex w-[280px] h-screen bg-[#121212] flex-col p-6 border-r border-[#222] shrink-0 sticky top-0 overflow-y-auto"
       >
         
         {/* Logo Section */}
-        <Link to="/" className="flex items-center justify-center mb-10 w-full hover:opacity-80 transition-opacity">
+        <Link to="/" className="flex items-center justify-center mb-10 w-full hover:opacity-80 transition-opacity shrink-0">
           <motion.img 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -140,7 +156,7 @@ export default function Sidebar() {
         <motion.div 
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.2 }}
-          className="w-full bg-[#a3a3a3] rounded-2xl p-4 flex items-center gap-4 mb-8 shadow-md"
+          className="w-full bg-[#a3a3a3] rounded-2xl p-4 flex items-center gap-4 mb-8 shadow-md shrink-0"
         >
           <div className="w-12 h-12 bg-[#1a1a1a] border-2 border-[#2ecc71]/50 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
             <img 
@@ -160,7 +176,7 @@ export default function Sidebar() {
         </motion.div>
 
         {/* Navigation Links */}
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-2 flex-grow">
           {navItems.map((item) => {
             const active = isActive(item.path);
             return (
@@ -186,7 +202,7 @@ export default function Sidebar() {
           onClick={handleLogout}
           whileHover={{ x: 4 }}
           whileTap={{ scale: 0.98 }}
-          className="mt-auto flex items-center gap-3 px-4 py-3 text-red-500 font-extrabold hover:bg-red-500/10 rounded-xl transition-colors w-full cursor-pointer"
+          className="mt-6 flex items-center gap-3 px-4 py-3 text-red-500 font-extrabold hover:bg-red-500/10 rounded-xl transition-colors w-full cursor-pointer shrink-0"
         >
           <span className="text-[17px]">Log Out</span>
           <FaSignOutAlt className="w-6 h-6 ml-auto" />
@@ -230,7 +246,7 @@ export default function Sidebar() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute bottom-16 right-0 w-56 bg-[#1a1a1a] border border-[#333] rounded-2xl shadow-2xl py-3 flex flex-col gap-1 z-50 backdrop-blur-xl"
+                className="absolute bottom-16 right-0 w-56 bg-[#1a1a1a] border border-[#333] rounded-2xl shadow-2xl py-3 flex flex-col gap-1 z-50 backdrop-blur-xl max-h-[70vh] overflow-y-auto"
               >
                 {navItems.map((item) => {
                   const active = isActive(item.path);
@@ -265,7 +281,7 @@ export default function Sidebar() {
           <motion.button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             whileTap={{ scale: 0.9 }}
-            className="flex flex-col items-center justify-center text-gray-300 focus:outline-none"
+            className="flex flex-col items-center justify-center text-gray-300 focus:outline-none cursor-pointer"
             aria-label="Toggle Menu"
           >
             <div className="w-11 h-11 rounded-full bg-[#222222] border border-[#333] flex items-center justify-center shadow-sm">

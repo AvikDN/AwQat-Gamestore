@@ -18,6 +18,10 @@ import DashOrder from "../pages/DashOrder";
 import Cart from "../pages/Cart";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import ActivationPage from "../pages/ActivationPage";
+import ResendActivation from "../pages/ResendActivation";
+import ResetPassword from "../pages/ResetPassword";
+import ResetPasswordConfirm from "../pages/ResetPasswordConfirm";
 import ScrollToTop from "../components/ScrollToTop";
 
 const AppRoutes = () => {
@@ -33,6 +37,10 @@ const AppRoutes = () => {
         <Route path="/category/:id" element={<CategoryGames />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/activate/:uid/:token" element={<ActivationPage />} />
+        <Route path="/resend-activation" element={<ResendActivation />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/password/reset/confirm/:uid/:token" element={<ResetPasswordConfirm />}/>
         
         <Route path="/faq" element={<FAQ />} />
         <Route path="/about" element={<About />} />

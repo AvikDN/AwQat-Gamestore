@@ -58,7 +58,13 @@ export default function Register() {
     setLoading(true);
     setSuccessMsg("");
 
-    const { confirmPassword, ...payload } = data;
+    // Djoser backend expects 're_password' to match 'password'
+    const payload = {
+      email: data.email,
+      username: data.username,
+      password: data.password,
+      re_password: data.confirmPassword 
+    };
 
     try {
       const result = await registerUser(payload);
@@ -66,19 +72,52 @@ export default function Register() {
       if (result.success) {
         setSuccessMsg("Registration successful! Please check your email to activate your account.");
       } else {
-        if (typeof result.fieldErrors === "object") {
+        let generalErrorSet = false;
+
+        // Safely extract field-specific errors
+        if (result.fieldErrors && typeof result.fieldErrors === "object") {
           for (const [field, messages] of Object.entries(result.fieldErrors)) {
-            setError(field, {
-              type: "server",
-              message: Array.isArray(messages) ? messages.join(" ") : messages,
-            });
+            let errorText = "Invalid input.";
+            
+            if (Array.isArray(messages)) {
+              errorText = typeof messages[0] === 'string' ? messages[0] : JSON.stringify(messages[0]);
+            } else if (typeof messages === "string") {
+              errorText = messages;
+            }
+
+            // Map backend "re_password" to frontend "confirmPassword"
+            const uiField = field === "re_password" ? "confirmPassword" : field;
+
+            if (["email", "username", "password", "confirmPassword"].includes(uiField)) {
+              setError(uiField, { type: "server", message: String(errorText) });
+            } else {
+              setError("general", { type: "server", message: String(errorText) });
+              generalErrorSet = true;
+            }
           }
-        } else if (result.message) {
-          setError("general", {
-            type: "server",
-            message: result.message,
-          });
-        } else {
+        } 
+        
+        // Safely extract general message errors
+        if (!generalErrorSet && result.message) {
+          let errorText = "Registration failed. Please try again.";
+          
+          if (typeof result.message === "string") {
+            errorText = result.message;
+          } else if (typeof result.message === "object") {
+            const firstKey = Object.keys(result.message)[0];
+            if (firstKey && Array.isArray(result.message[firstKey])) {
+              errorText = result.message[firstKey][0];
+            } else if (firstKey && typeof result.message[firstKey] === "string") {
+              errorText = result.message[firstKey];
+            }
+          }
+          
+          setError("general", { type: "server", message: String(errorText) });
+          generalErrorSet = true;
+        } 
+        
+        // Fallback if no specific error format was found
+        if (!generalErrorSet && !result.fieldErrors) {
           setError("general", {
             type: "server",
             message: "Registration failed. Please try again.",
