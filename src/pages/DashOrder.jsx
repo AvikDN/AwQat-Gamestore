@@ -136,7 +136,7 @@ const DashOrder = () => {
         {/* Section Header */}
         <div className="text-center space-y-2 relative z-10 border-b border-[#222222] pb-6">
           <div className="flex items-center  gap-2 mb-1">
-            <FaClipboardList className="text-2xl sm:text-3xl text-[#2ecc71]" />
+            <FaClipboardList className="text-2xl sm:text-3xl " />
             <h1 className="text-5xl sm:text-5xl md:text-5xl font-extrabold tracking-tight text-white">
               Orders
             </h1>

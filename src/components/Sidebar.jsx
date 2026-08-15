@@ -47,7 +47,6 @@ export default function Sidebar() {
     { name: 'Profile', path: '/dashboard', icon: <FaUser className="text-xl" /> },
     { name: 'Browse', path: '/products', icon: <FaCompass className="text-xl" /> },
     { name: 'Cart', path: '/dashboard/cart', icon: <FaShoppingCart className="text-xl" /> },
-    { name: 'Orders', path: '/dashboard/orders', icon: <FaClipboardList className="text-xl" /> },
     { name: 'Wishlists', path: '/dashboard/wishlists', icon: <FaHeart className="text-xl" /> },
     { name: 'History', path: '/dashboard/history', icon: <FaHistory className="text-xl" /> },
   ];

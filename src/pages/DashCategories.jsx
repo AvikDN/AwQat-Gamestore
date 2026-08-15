@@ -22,10 +22,11 @@ import {
   FaChess,
   FaGhost,
   FaCode,
-  FaImage
+  FaImage,
+  FaLayerGroup
 } from 'react-icons/fa';
 
-const AwqatCategories = () => {
+const DashCategories = () => {
   const [categories, setCategories] = useState([
     {
       id: 'action',
@@ -179,11 +180,12 @@ const AwqatCategories = () => {
         >
           {/* Header */}
           <div className="flex flex-row items-center justify-between gap-4 border-b border-[#222222] pb-5">
-            <div className="flex items-center gap-3">
-              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
-                Categories
-              </h1>
-            </div>
+            <div className="flex items-center gap-3 sm:gap-4">
+            <FaLayerGroup className="text-3xl sm:text-4xl text-white shrink-0" />
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+               Categories
+            </h1>
+          </div>
 
             <motion.button
               whileHover={{ scale: 1.04 }}
@@ -506,4 +508,4 @@ const AwqatCategories = () => {
   );
 };
 
-export default AwqatCategories;
+export default DashCategories;

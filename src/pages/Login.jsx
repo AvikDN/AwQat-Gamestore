@@ -141,7 +141,7 @@ export default function Login() {
           {/* Email/Username */}
           <motion.div className="flex flex-col gap-1" variants={itemVariants}>
             <label className="text-gray-200 text-sm md:text-base font-medium">
-              Email/Username:
+              Email:
             </label>
             <input 
               type="email" 

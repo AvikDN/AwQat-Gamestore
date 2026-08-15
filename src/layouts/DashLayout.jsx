@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import DashboardFooter from '../components/Dashfooter';
-import bgImage from '../assets/bg.png';
+import bgImage from '../assets/pics/AwBG.png';
 import logoImg from '../assets/Awqat_full.png';
 
 const DashLayout = () => {

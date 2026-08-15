@@ -6,9 +6,7 @@ import {
   FaEye, 
   FaEyeSlash, 
   FaSpinner, 
-  FaExclamationCircle, 
-  FaCheckCircle, 
-  FaEnvelope
+  FaExclamationCircle
 } from 'react-icons/fa';
 import { useAuthContext } from '../contexts/AuthContext'; 
 import logoImg from '../assets/Join_Awqat.png'; 
@@ -46,7 +44,6 @@ export default function Register() {
   } = useForm();
 
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -56,7 +53,6 @@ export default function Register() {
   const onSubmit = async (data) => {
     clearErrors();
     setLoading(true);
-    setSuccessMsg("");
 
     // Djoser backend expects 're_password' to match 'password'
     const payload = {
@@ -70,7 +66,8 @@ export default function Register() {
       const result = await registerUser(payload);
 
       if (result.success) {
-        setSuccessMsg("Registration successful! Please check your email to activate your account.");
+        // Send straight to login
+        navigate('/login');
       } else {
         let generalErrorSet = false;
 
@@ -172,22 +169,6 @@ export default function Register() {
             >
               <FaExclamationCircle className="text-lg shrink-0 mt-0.5" />
               <span>{errors.general.message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Success Message */}
-        <AnimatePresence>
-          {successMsg && (
-            <motion.div
-              className="w-full bg-[#2ecc71]/10 border border-[#2ecc71]/50 text-[#2ecc71] px-4 py-3 rounded-md mb-6 flex items-start gap-3 text-sm"
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: "auto", marginBottom: 24 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <FaCheckCircle className="text-lg shrink-0 mt-0.5" />
-              <span>{successMsg}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -377,16 +358,6 @@ export default function Register() {
           className="mt-6 text-center space-y-3"
           variants={itemVariants}
         >
-          {/* Resend Activation Link */}
-          {(successMsg || errors.general) && (
-            <Link 
-              to="/resend-activation" 
-              className="inline-flex items-center gap-2 text-gray-300 hover:text-white text-sm font-semibold transition-colors focus:outline-none"
-            >
-              <FaEnvelope /> Resend Activation Email
-            </Link>
-          )}
-
           <div className="text-gray-200 text-sm md:text-base">
             Already have an account?{' '}
             <Link to="/login" className="font-bold text-white hover:underline transition-all focus:outline-none">
