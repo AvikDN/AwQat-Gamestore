@@ -16,6 +16,7 @@ import CategoryGames from "../pages/CategoryGames";
 import DashCategories from "../pages/DashCategories";
 import DashOrder from "../pages/DashOrder";
 import Cart from "../pages/Cart";
+import AdminCart from "../pages/AdminCart";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import ActivationPage from "../pages/ActivationPage";
@@ -58,6 +59,7 @@ const AppRoutes = () => {
         >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/cart" element={<Cart />} />
+        <Route path="/dashboard/carts" element={<AdminCart />} />
         <Route path="/dashboard/categories" element={<DashCategories />} />
         <Route path="/dashboard/orders" element={<DashOrder />} />
           
