@@ -36,7 +36,7 @@ export default function Sidebar() {
     { name: 'Profile', path: '/dashboard', icon: <FaUser className="text-xl" /> },
     { name: 'Games', path: '/dashboard/games', icon: <FaGamepad className="text-xl" /> },
     { name: 'Categories', path: '/dashboard/categories', icon: <FaLayerGroup className="text-xl" /> },
-    { name: 'Review', path: '/dashboard/review', icon: <FaStar className="text-xl" /> },
+    { name: 'Review', path: '/dashboard/reviews', icon: <FaStar className="text-xl" /> },
     { name: 'Orders', path: '/dashboard/orders', icon: <FaClipboardList className="text-xl" /> },
     { name: 'Cart', path: '/dashboard/carts', icon: <FaShoppingCart className="text-xl" /> },
     { name: 'Users', path: '/dashboard/users', icon: <FaUsers className="text-xl" /> },
