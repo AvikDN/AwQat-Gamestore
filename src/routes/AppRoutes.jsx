@@ -14,8 +14,9 @@ import Dashboard from "../pages/Dashboard";
 import Categories from "../pages/Categories";
 import CategoryGames from "../pages/CategoryGames";
 import DashCategories from "../pages/DashCategories";
-import DashOrder from "../pages/DashOrder";
+import DashOrders from "../pages/DashOrders";
 import Cart from "../pages/Cart";
+import DashReviews from "../pages/DashReviews";
 import AdminCart from "../pages/AdminCart";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
@@ -61,7 +62,8 @@ const AppRoutes = () => {
         <Route path="/dashboard/cart" element={<Cart />} />
         <Route path="/dashboard/carts" element={<AdminCart />} />
         <Route path="/dashboard/categories" element={<DashCategories />} />
-        <Route path="/dashboard/orders" element={<DashOrder />} />
+        <Route path="/dashboard/reviews" element={<DashReviews />} />
+        <Route path="/dashboard/orders" element={<DashOrders />} />
           
       </Route>
     </Routes>
