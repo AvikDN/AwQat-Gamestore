@@ -15,14 +15,14 @@ export default function Offers() {
     { bgColor: '#161C21', badgeColor: '#666666' }
   ];
 
-  useEffect(() => {
+ useEffect(() => {
     setIsLoading(true);
     
     apiClient.get('/games/discounted/')
       .then(response => {
-        const discountedGames = response.data;
+        const data = response.data;
+        const discountedGames = Array.isArray(data) ? data : (data.results || []);
 
-        // Removed .slice(0, 3) to include ALL discounted games in the cycle
         const formattedCards = discountedGames.map((game, index) => {
           const theme = cardThemes[index % cardThemes.length];
           const discountValue = parseFloat(game.discount);
@@ -46,7 +46,6 @@ export default function Offers() {
         setIsLoading(false);
       });
   }, []);
-
   const shuffleCards = () => {
     if (isAnimating || cards.length <= 1 || isLoading) return; 
     

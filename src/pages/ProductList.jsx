@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import apiClient from '../services/api-client';
 
 export default function ProductList() {
+  const [searchParams] = useSearchParams();
+  const urlSearchQuery = searchParams.get('search') || '';
+
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef(null);
 
@@ -18,14 +21,23 @@ export default function ProductList() {
   const [hasPrev, setHasPrev] = useState(false);
 
   const [sortOrder, setSortOrder] = useState('default');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState(urlSearchQuery);
+  const [debouncedSearch, setDebouncedSearch] = useState(urlSearchQuery);
   
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(3000);
+  const [debouncedMinPrice, setDebouncedMinPrice] = useState(0);
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = useState(3000);
+  
   const [selectedStudio, setSelectedStudio] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedAvailability, setSelectedAvailability] = useState('All');
+
+  // Keep search term synced if URL changes externally
+  useEffect(() => {
+    setSearchTerm(urlSearchQuery);
+    setDebouncedSearch(urlSearchQuery);
+  }, [urlSearchQuery]);
 
   // Fetch Studios and Categories on mount
   useEffect(() => {
@@ -42,20 +54,22 @@ export default function ProductList() {
       });
   }, []);
 
-  // Debounce search term to prevent rapid API calls while typing
+  // Debounce search and price terms to prevent rapid API calls
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
+      setDebouncedMinPrice(minPrice);
+      setDebouncedMaxPrice(maxPrice);
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, minPrice, maxPrice]);
 
-  // Reset page to 1 when endpoint-altering filters change
+  // Reset page to 1 when ANY filter changes
   useEffect(() => {
     setPage(1);
-  }, [sortOrder, selectedAvailability, debouncedSearch]);
+  }, [sortOrder, selectedAvailability, debouncedSearch, debouncedMinPrice, debouncedMaxPrice, selectedStudio, selectedCategory]);
 
-  // Fetch Games based on current page and endpoints
+  // Fetch Games based on current page and backend filters
   useEffect(() => {
     setIsLoading(true);
     
@@ -68,28 +82,35 @@ export default function ProductList() {
 
     const queryParams = new URLSearchParams({ page: page });
 
-    if (debouncedSearch) {
-      queryParams.append('search', debouncedSearch);
-    }
+    // Search and Sort
+    if (debouncedSearch) queryParams.append('search', debouncedSearch);
+    if (sortOrder === 'low-to-high') queryParams.append('ordering', 'final_price');
+    if (sortOrder === 'high-to-low') queryParams.append('ordering', '-final_price');
 
-    if (sortOrder === 'low-to-high') {
-      queryParams.append('ordering', 'price');
-    } else if (sortOrder === 'high-to-low') {
-      queryParams.append('ordering', '-price');
-    }
+    // Sidebar Filters
+    queryParams.append('max_price', debouncedMaxPrice);
+    
+    if (selectedStudio !== 'All') queryParams.append('studio', selectedStudio);
+    if (selectedCategory !== 'All') queryParams.append('category', selectedCategory);
 
     apiClient.get(`${endpoint}?${queryParams.toString()}`)
       .then(response => {
         const data = response.data;
         
-        if (Array.isArray(data)) {
-          setProducts(data);
-          setHasNext(false); 
-          setHasPrev(false);
-        } else {
-          setProducts(data.results || []);
+        let fetchedProducts = Array.isArray(data) ? data : (data.results || []);
+
+        // Extra frontend safety net: filter out zero-price or inactive games if low-to-high is selected
+        if (sortOrder === 'low-to-high') {
+          fetchedProducts = fetchedProducts.filter(product => product.active && parseFloat(product.price) > 0);
+        }
+
+        setProducts(fetchedProducts);
+        if (!Array.isArray(data)) {
           setHasNext(!!data.next);
           setHasPrev(!!data.previous);
+        } else {
+          setHasNext(false);
+          setHasPrev(false);
         }
         setIsLoading(false);
       })
@@ -99,7 +120,7 @@ export default function ProductList() {
       });
       
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page, sortOrder, selectedAvailability, debouncedSearch]);
+  }, [page, sortOrder, selectedAvailability, debouncedSearch, debouncedMinPrice, debouncedMaxPrice, selectedStudio, selectedCategory]);
 
   const handleNextPage = () => {
     if (hasNext) setPage(prev => prev + 1);
@@ -131,19 +152,6 @@ export default function ProductList() {
     setMaxPrice(value);
   };
 
-  // Client-side filtering for the current page of results
-  let processedProducts = products.filter(product => {
-    const originalPrice = parseFloat(product.price);
-    const discountValue = parseFloat(product.discount || 0);
-    const finalPrice = discountValue > 0 ? originalPrice - (originalPrice * (discountValue / 100)) : originalPrice;
-    
-    const matchesPrice = finalPrice >= minPrice && finalPrice <= maxPrice;
-    const matchesStudio = selectedStudio === 'All' || product.studio_name === selectedStudio;
-    const matchesCategory = selectedCategory === 'All' || product.category === Number(selectedCategory);
-
-    return matchesPrice && matchesStudio && matchesCategory;
-  });
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -157,14 +165,9 @@ export default function ProductList() {
       }
     );
 
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
+      if (sectionRef.current) observer.unobserve(sectionRef.current);
     };
   }, []);
 
@@ -288,7 +291,7 @@ export default function ProductList() {
                 >
                   <option value="All">Studio</option>
                   {studios.map(studio => (
-                    <option key={studio.id} value={studio.name}>{studio.name}</option>
+                    <option key={studio.id} value={studio.id}>{studio.name}</option>
                   ))}
                 </select>
                 <svg className="absolute right-4 top-4 w-5 h-5 xl:w-6 xl:h-6 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -360,8 +363,8 @@ export default function ProductList() {
                   </div>
                 </div>
               ))
-            ) : processedProducts.length > 0 ? (
-              processedProducts.map((product, index) => {
+            ) : products.length > 0 ? (
+              products.map((product, index) => {
                 const imageUrl = product.images && product.images.length > 0 ? product.images[0].image : null;
                 const originalPrice = parseFloat(product.price);
                 const discountVal = parseFloat(product.discount || 0);

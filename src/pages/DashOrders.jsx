@@ -128,23 +128,20 @@ const DashOrder = () => {
     }
   };
 
-  return (
-    <div className="w-full min-h-screen text-white font-sans p-4 sm:p-6 lg:p-8 flex justify-center items-start select-none">
-      {/* Main Glassmorphism Dashboard Container */}
-      <div className="w-full max-w-5xl bg-[#161616] border border-[#262626] rounded-[24px] sm:rounded-[32px] p-5 sm:p-8 md:p-10 shadow-2xl space-y-8 relative overflow-hidden">
+ return (
+    <div className="w-full min-h-screen bg-transparent text-white font-sans p-4 sm:p-6 lg:p-8 flex justify-center items-start select-none">
+      {/* Transparent Layout Wrapper */}
+     <div className="w-full max-w-[1600px] mx-auto space-y-6 md:space-y-8 relative">
 
-        {/* Section Header */}
-        <div className="text-center space-y-2 relative z-10 border-b border-[#222222] pb-6">
-          <div className="flex items-center  gap-2 mb-1">
-            <FaClipboardList className="text-2xl sm:text-3xl " />
-            <h1 className="text-5xl sm:text-5xl md:text-5xl font-extrabold tracking-tight text-white">
-              Orders
-            </h1>
-          </div>
-          
+        {/* Floating Section Header */}
+        <div className="flex items-center gap-3.5 relative z-10 pt-4 md:pt-8">
+          <FaClipboardList className="text-3xl sm:text-4xl text-white shrink-0" />
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+            Orders
+          </h1>
         </div>
 
-        {/* Search & Filter Bar */}
+        {/* Search & Filter Bar - Separated Box */}
         <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10 shadow-lg">
           <div className="flex items-center gap-3 w-full sm:w-auto">
             {/* Filter Dropdown Toggle Button */}
@@ -167,7 +164,7 @@ const DashOrder = () => {
                         setStatusFilter(st);
                         setShowFilterMenu(false);
                       }}
-                      className={`w-full text-left px-4 py-2 font-bold transition hover:bg-[#222222] ৳{
+                      className={`w-full text-left px-4 py-2 font-bold transition hover:bg-[#222222] ${
                         statusFilter === st ? 'text-[#2ecc71]' : 'text-gray-300'
                       }`}
                     >
@@ -241,7 +238,6 @@ const DashOrder = () => {
                             <FaSyncAlt className="text-gray-500" />
                             Updated: <span className="text-gray-300">{order.updatedDate}</span>
                           </span>
-                          
                         </div>
                       </div>
 

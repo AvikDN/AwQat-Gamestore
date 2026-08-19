@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Upcoming from '../components/Home/Upcoming';
 import FeCategories from '../components/Home/FeCategories';
 import FeProducts from '../components/Home/FeProducts';
@@ -6,15 +7,30 @@ import Offers from '../components/Home/Offers';
 import Reviews from '../components/Home/Reviews'; 
 
 const Home = () => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const navigate = useNavigate();
+
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        if (searchTerm.trim()) {
+            navigate(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
+        }
+    };
+
     return (
-       <div className="w-full min-h-screen overflow-x-hidden">
+        <div className="w-full min-h-screen overflow-x-hidden">
             <main className="w-full pt-32 pb-16 flex flex-col items-center justify-center">
                 <Upcoming />
                 
-                <div className="mt-8 flex items-center justify-between w-full max-w-100 bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 shadow-lg">
+                <form 
+                    onSubmit={handleSearchSubmit}
+                    className="mt-8 flex items-center justify-between w-full max-w-md bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 shadow-lg"
+                >
                     <input 
                         type="text" 
                         placeholder="Search" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="bg-transparent text-gray-800 placeholder-gray-600 outline-none w-full text-lg font-light"
                     />
                     <button type="submit" aria-label="Search">
@@ -22,7 +38,8 @@ const Home = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </button>
-                </div>
+                </form>
+
                 <FeCategories/>
                 <FeProducts />
                 <Offers/> 

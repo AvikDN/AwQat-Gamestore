@@ -12,7 +12,7 @@ const itemVariants = {
     },
 };
 
-// Helper function to calculate final price for sorting
+// Helper function to calculate final price for sorting and display
 const getFinalPrice = (product) => {
     const originalPrice = parseFloat(product.price) || 0;
     const discountVal = parseFloat(product.discount || 0);
@@ -28,6 +28,7 @@ export default function CategoryGames() {
     const { id } = useParams();
     
     const [games, setGames] = useState([]);
+    const [categoryName, setCategoryName] = useState('Games');
     const [isLoading, setIsLoading] = useState(true);
 
     // Pagination states
@@ -38,7 +39,7 @@ export default function CategoryGames() {
     // Filter & Sorting states
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [ordering, setOrdering] = useState('');
+    const [ordering, setOrdering] = useState('default');
 
     // Debounce search input
     useEffect(() => {
@@ -48,24 +49,58 @@ export default function CategoryGames() {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    // Fetch games (without search/ordering query params since it's frontend filtered now)
+    // Reset page to 1 when filters or sorting change
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch, ordering]);
+
+    // Fetch category details for the dynamic title
+    useEffect(() => {
+        apiClient.get(`/categories/${id}/`)
+            .then(response => {
+                if (response.data && response.data.name) {
+                    setCategoryName(response.data.name);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching category details:", error);
+            });
+    }, [id]);
+
+    // Fetch games from category endpoint with low-to-high parameters
     useEffect(() => {
         setIsLoading(true);
 
         const queryParams = new URLSearchParams({ page: page });
 
+        if (debouncedSearch) queryParams.append('search', debouncedSearch);
+
+        // Apply ordering logic matching ProductList
+        if (ordering === 'low-to-high') {
+            queryParams.append('ordering', 'final_price');
+            queryParams.append('min_price', '1');
+        } else if (ordering === 'high-to-low') {
+            queryParams.append('ordering', '-final_price');
+        }
+
         apiClient.get(`/categories/${id}/games/?${queryParams.toString()}`)
             .then(response => {
                 const data = response.data;
                 
-                if (Array.isArray(data)) {
-                    setGames(data);
-                    setHasNext(false);
-                    setHasPrev(false);
-                } else {
-                    setGames(data.results || []);
+                let fetchedGames = Array.isArray(data) ? data : (data.results || []);
+
+                // Extra frontend safety net to exclude upcoming/0 price items on low-to-high sort
+                if (ordering === 'low-to-high') {
+                    fetchedGames = fetchedGames.filter(game => game.active && parseFloat(game.price) > 0);
+                }
+
+                setGames(fetchedGames);
+                if (!Array.isArray(data)) {
                     setHasNext(!!data.next);
                     setHasPrev(!!data.previous);
+                } else {
+                    setHasNext(false);
+                    setHasPrev(false);
                 }
                 setIsLoading(false);
             })
@@ -75,7 +110,7 @@ export default function CategoryGames() {
             });
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [id, page]);
+    }, [id, page, ordering, debouncedSearch]);
 
     const handleNextPage = () => {
         if (hasNext) setPage(prev => prev + 1);
@@ -94,10 +129,13 @@ export default function CategoryGames() {
         );
     }
 
-    if (ordering === 'price') {
+    if (ordering === 'low-to-high') {
+        processedGames = processedGames.filter(game => game.active && parseFloat(game.price) > 0);
         processedGames.sort((a, b) => getFinalPrice(a) - getFinalPrice(b));
-    } else if (ordering === '-price') {
+    } else if (ordering === 'high-to-low') {
         processedGames.sort((a, b) => getFinalPrice(b) - getFinalPrice(a));
+    } else if (ordering === 'discounted') {
+        processedGames = processedGames.filter(game => parseFloat(game.discount || 0) > 0);
     } else if (ordering === 'title') {
         processedGames.sort((a, b) => a.title.localeCompare(b.title));
     } else if (ordering === '-title') {
@@ -111,7 +149,7 @@ export default function CategoryGames() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 bg-[#1a1a1a] p-4 md:p-6 rounded-3xl border border-[#333] shadow-lg">
                 
                 <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-                    Games <span className="text-[#2ecc71]">Collection</span>
+                    {categoryName} <span className="text-[#2ecc71]">Games</span>
                 </h1>
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
@@ -134,11 +172,12 @@ export default function CategoryGames() {
                         <select 
                             value={ordering}
                             onChange={(e) => setOrdering(e.target.value)}
-                            className="w-full bg-[#121212] text-white font-bold rounded-xl py-3 pl-4 pr-10 appearance-none outline-none focus:ring-2 focus:ring-[#2ecc71] transition-shadow border border-[#333] cursor-pointer"
+                            className="w-full bg-[#121212] text-white font-bold rounded-xl py-3 pl-4 pr-10 appearance-none outline-none cursor-pointer hover:bg-[#1f1f1f] transition-colors border border-[#333]"
                         >
-                            <option value="">Sort: Default</option>
-                            <option value="price">Price: Low to High</option>
-                            <option value="-price">Price: High to Low</option>
+                            <option value="default">Default</option>
+                            <option value="low-to-high">Low to High</option>
+                            <option value="high-to-low">High to Low</option>
+                            <option value="discounted">Discounted</option>
                             <option value="title">Name: A to Z</option>
                             <option value="-title">Name: Z to A</option>
                         </select>
@@ -241,7 +280,7 @@ export default function CategoryGames() {
                     })
                 ) : (
                     <div className="col-span-full pt-12 text-center text-gray-400 text-lg md:text-xl font-bold">
-                        No products match your current search.
+                        No products match your current filters.
                     </div>
                 )}
             </div>

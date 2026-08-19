@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaSave, FaTimes, FaImage, FaUser } from "react-icons/fa";
 import { useAuthContext } from "../contexts/AuthContext";
 import authApiClient from "../services/auth-api-client";
-import toast from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -51,8 +51,6 @@ const Dashboard = () => {
             const res = await authApiClient.get("/auth/users/me/");
             setUserProfile(res.data);
             reset({
-                username: res.data.username || "",
-                email: res.data.email || "",
                 full_name: res.data.profile?.full_name || "",
                 phone_number: res.data.profile?.phone_number || "",
                 address: res.data.profile?.address || "",
@@ -75,16 +73,9 @@ const Dashboard = () => {
 
     const onSubmit = async (data) => {
         setSaving(true);
-        try {
-            // Update User details if changed
-            if (data.username !== userProfile.username || data.email !== userProfile.email) {
-                await authApiClient.patch("/auth/users/me/", {
-                    username: data.username,
-                    email: data.email,
-                });
-            }
+        const toastId = toast.loading("Updating profile...");
 
-            // Update Profile details
+        try {
             const formData = new FormData();
             if (data.full_name !== undefined) formData.append("full_name", data.full_name);
             if (data.phone_number !== undefined) formData.append("phone_number", data.phone_number);
@@ -102,12 +93,12 @@ const Dashboard = () => {
                 });
             }
 
-            toast.success("Profile updated successfully!");
+            toast.success("Profile updated successfully!", { id: toastId });
             setEditMode(false);
             loadProfile();
         } catch (error) {
             console.error("Error updating profile:", error);
-            toast.error("Failed to update profile");
+            toast.error("Failed to update profile", { id: toastId });
         } finally {
             setSaving(false);
         }
@@ -124,6 +115,7 @@ const Dashboard = () => {
     if (!userProfile) {
         return (
             <div className="text-center py-8">
+                <Toaster position="top-center" />
                 <p className="text-red-500 text-lg font-bold">Profile not found</p>
             </div>
         );
@@ -136,22 +128,33 @@ const Dashboard = () => {
             animate="visible"
             variants={containerVariants}
         >
+            <Toaster 
+                position="top-center"
+                toastOptions={{
+                    style: {
+                        background: '#333',
+                        color: '#fff',
+                        borderRadius: '10px',
+                    },
+                    success: { iconTheme: { primary: '#2ecc71', secondary: '#333' } },
+                }}
+            />
+
             <motion.div 
                 className="w-full max-w-3xl bg-[#121212]/90 backdrop-blur-md border border-[#333] rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-10 shadow-2xl relative"
                 variants={itemVariants}
             >
-                {/* Header & Edit Button */}
                 <motion.div 
                     className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8 pb-4 border-b border-[#333]"
                     variants={itemVariants}
                 >
                     <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-                        My Dashboard
+                        My Profile
                     </h1>
                     <motion.button
                         onClick={() => {
                             setEditMode(!editMode);
-                            if (editMode) reset(); // Reset form if canceling
+                            if (editMode) reset(); 
                         }}
                         className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all duration-300 shadow-md cursor-pointer w-full sm:w-auto ${
                             editMode 
@@ -165,7 +168,6 @@ const Dashboard = () => {
                     </motion.button>
                 </motion.div>
 
-                {/* Profile Picture and Names */}
                 <motion.div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-8 text-center sm:text-left" variants={itemVariants}>
                     <div className="relative group shrink-0">
                         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-[#2ecc71]/50 bg-[#1a1a1a] flex items-center justify-center overflow-hidden shadow-xl">
@@ -203,7 +205,6 @@ const Dashboard = () => {
 
                 <AnimatePresence mode="wait">
                     {!editMode ? (
-                        /* View Mode */
                         <motion.div 
                             key="view-mode"
                             initial={{ opacity: 0, y: 10 }}
@@ -212,7 +213,6 @@ const Dashboard = () => {
                             transition={{ duration: 0.3 }}
                             className="space-y-6 sm:space-y-8"
                         >
-                            {/* Account Info */}
                             <div className="space-y-3 sm:space-y-4">
                                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#2ecc71] tracking-wide">
                                     Account Info:
@@ -233,7 +233,6 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Personal Detail */}
                             <div className="space-y-3 sm:space-y-4">
                                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#2ecc71] tracking-wide">
                                     Personal Detail:
@@ -275,7 +274,6 @@ const Dashboard = () => {
                             </div>
                         </motion.div>
                     ) : (
-                        /* Edit Mode Form */
                         <motion.form 
                             key="edit-mode"
                             onSubmit={handleSubmit(onSubmit)}
@@ -294,22 +292,19 @@ const Dashboard = () => {
                                         <label className="text-xs sm:text-sm text-gray-300 font-medium">Username:</label>
                                         <input 
                                             type="text" 
-                                            {...register("username", { required: "Username is required" })}
-                                            className={`w-full bg-[#1a1a1a] border rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white outline-none shadow-inner transition-colors ${errors.username ? "border-red-500 focus:border-red-500" : "border-[#333] focus:border-[#2ecc71]"}`}
+                                            value={userProfile.username}
+                                            disabled
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-gray-500 outline-none shadow-inner cursor-not-allowed"
                                         />
-                                        {errors.username && <span className="text-red-400 text-xs">{errors.username.message}</span>}
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-xs sm:text-sm text-gray-300 font-medium">Email:</label>
                                         <input 
                                             type="email" 
-                                            {...register("email", { 
-                                                required: "Email is required",
-                                                pattern: { value: /^\S+@\S+$/i, message: "Invalid email" }
-                                            })}
-                                            className={`w-full bg-[#1a1a1a] border rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-white outline-none shadow-inner transition-colors ${errors.email ? "border-red-500 focus:border-red-500" : "border-[#333] focus:border-[#2ecc71]"}`}
+                                            value={userProfile.email}
+                                            disabled
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded-xl p-3 sm:p-3.5 text-sm sm:text-base text-gray-500 outline-none shadow-inner cursor-not-allowed"
                                         />
-                                        {errors.email && <span className="text-red-400 text-xs">{errors.email.message}</span>}
                                     </div>
                                 </div>
                             </div>

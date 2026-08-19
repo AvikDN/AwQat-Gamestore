@@ -16,6 +16,7 @@ import {
   FaHistory,
   FaCompass
 } from 'react-icons/fa';
+import { SiRobloxstudio } from "react-icons/si";
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoImg from '../assets/Awqat_full.png'; 
@@ -36,6 +37,7 @@ export default function Sidebar() {
     { name: 'Profile', path: '/dashboard', icon: <FaUser className="text-xl" /> },
     { name: 'Games', path: '/dashboard/games', icon: <FaGamepad className="text-xl" /> },
     { name: 'Categories', path: '/dashboard/categories', icon: <FaLayerGroup className="text-xl" /> },
+    { name: 'Studios', path: '/dashboard/studios', icon: <SiRobloxstudio className="text-xl" /> },
     { name: 'Reviews', path: '/dashboard/reviews', icon: <FaStar className="text-xl" /> },
     { name: 'Orders', path: '/dashboard/orders', icon: <FaClipboardList className="text-xl" /> },
     { name: 'Carts', path: '/dashboard/carts', icon: <FaShoppingCart className="text-xl" /> },

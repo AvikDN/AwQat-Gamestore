@@ -26,6 +26,7 @@ export default function Categories() {
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrev, setHasPrev] = useState(false);
+  const [ordering, setOrdering] = useState('default');
 
   useEffect(() => {
     setIsLoading(true);
@@ -55,12 +56,23 @@ export default function Categories() {
     if (hasPrev) setPage(prev => prev - 1);
   };
 
+  // --- Frontend Sorting ---
+  let processedCategories = [...categories];
+
+  if (ordering === 'name-asc') {
+    processedCategories.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (ordering === 'name-desc') {
+    processedCategories.sort((a, b) => b.name.localeCompare(a.name));
+  } else if (ordering === 'id-desc') {
+    processedCategories.sort((a, b) => b.id - a.id);
+  }
+
   return (
     <div className="bg-black min-h-screen w-full text-white selection:bg-[#2ecc71] selection:text-black">
       <div className="max-w-[1400px] mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 md:mb-16 gap-4">
+        {/* Header with Title and Sorting */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 md:mb-16 gap-6">
           <div>
             <motion.h1 
               initial={{ opacity: 0, x: -20 }}
@@ -79,11 +91,33 @@ export default function Categories() {
               Explore games by your favorite genres.
             </motion.p>
           </div>
+
+          {/* Sorting Dropdown */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="relative w-full sm:w-[220px]"
+          >
+            <select 
+              value={ordering}
+              onChange={(e) => setOrdering(e.target.value)}
+              className="w-full bg-[#1a1a1a] text-white font-bold rounded-xl py-3.5 pl-4 pr-10 appearance-none outline-none focus:ring-2 focus:ring-[#2ecc71] transition-shadow border border-[#333] cursor-pointer text-sm"
+            >
+              <option value="default">Sort: Default</option>
+              <option value="name-asc">Name: A to Z</option>
+              <option value="name-desc">Name: Z to A</option>
+              <option value="id-desc">Newest First</option>
+            </select>
+            <svg className="absolute right-4 top-4 w-5 h-5 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </motion.div>
         </div>
 
         {/* Grid */}
         <motion.div 
-          key={isLoading ? 'loading' : `page-${page}`}
+          key={isLoading ? 'loading' : `page-${page}-${ordering}`}
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -108,8 +142,8 @@ export default function Categories() {
                 </div>
               </motion.div>
             ))
-          ) : categories.length > 0 ? (
-            categories.map((category) => (
+          ) : processedCategories.length > 0 ? (
+            processedCategories.map((category) => (
               <motion.div 
                 key={category.id} 
                 variants={itemVariants}
