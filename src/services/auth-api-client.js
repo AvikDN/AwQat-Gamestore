@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const authApiClient = axios.create({
-  baseURL: "https://awqatapi-production.up.railway.app/",
+  baseURL: "https://awqatapi.vercel.app/",
 });
 
 export default authApiClient;

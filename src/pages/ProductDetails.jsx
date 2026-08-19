@@ -221,11 +221,11 @@ export default function ProductDetails() {
             <motion.div variants={itemVariants} className="mt-10 md:mt-12 flex flex-col gap-4">
               <h2 className="text-2xl md:text-3xl font-bold text-[#2ecc71]">Description</h2>
               
-              {product.studio_name && (
+              {product.developer && (
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400 font-bold">Studio:</span>
+                  <span className="text-gray-400 font-bold">Developed By:</span>
                   <span className="bg-[#1a1a1a] border border-[#333] text-white px-3 py-1 rounded-lg text-sm font-semibold">
-                    {product.studio_name}
+                    {product.developer}
                   </span>
                 </div>
               )}
