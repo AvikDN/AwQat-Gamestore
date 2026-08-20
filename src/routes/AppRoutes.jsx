@@ -29,6 +29,9 @@ import ActivationPage from "../pages/ActivationPage";
 import ResendActivation from "../pages/ResendActivation";
 import ResetPassword from "../pages/ResetPassword";
 import ResetPasswordConfirm from "../pages/ResetPasswordConfirm";
+import PaymentSuccess from "../pages/PaymentSuccess";
+import PaymentFailed from "../pages/PaymentFailed";
+import PaymentCancelled from "../pages/PaymentCancelled";
 import ScrollToTop from "../components/ScrollToTop";
 
 const AppRoutes = () => {
@@ -74,6 +77,9 @@ const AppRoutes = () => {
         <Route path="/dashboard/studios" element={<DashStudios />} />
         <Route path="/dashboard/wishlists" element={<DashWishlists />} />
         <Route path="/dashboard/history" element={<DashHistory />} />
+        <Route path="/dashboard/payment/success" element={<PaymentSuccess />}/>
+        <Route path="/dashboard/payment/fail" element={<PaymentFailed />} />
+        <Route path="/dashboard/payment/cancel" element={<PaymentCancelled />}/>
           
       </Route>
     </Routes>

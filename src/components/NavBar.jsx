@@ -7,21 +7,29 @@ import logoImg from '../assets/Awqat_full.png';
 import heartImg from '../assets/pics/heart.png';
 import defaultImg from '../assets/pics/profile_icon.svg';
 import { useAuthContext } from '../contexts/AuthContext';
+import { useCartContext } from '../contexts/CartContext';
+import CartDropdown from './CartDropdown'; 
 import GlassSurface from '../components/ReactBits/GlassSurface';
 
 export default function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  
   const profileRef = useRef(null);
+  const cartRef = useRef(null);
   
   const { user, logoutUser } = useAuthContext();
+  const { totalItems } = useCartContext();
   const navigate = useNavigate();
 
-  // Close profile dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setIsProfileOpen(false);
+      }
+      if (cartRef.current && !cartRef.current.contains(e.target)) {
+        setIsCartOpen(false);
       }
     };
     document.addEventListener("mouseup", handleClickOutside);
@@ -71,7 +79,6 @@ export default function NavBar() {
     });
   };
 
-  // Stagger variants for the mobile/tablet menu links
   const menuVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: {
@@ -107,7 +114,23 @@ export default function NavBar() {
       transition={{ type: "spring", stiffness: 100, damping: 20 }}
       className="flex flex-wrap items-center justify-between w-full px-3 sm:px-4 md:px-8 py-3 md:py-4 bg-transparent fixed top-0 left-0 z-50"
     >
-      <Toaster />
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          style: { 
+            background: '#18181c', 
+            color: '#fff', 
+            border: '1px solid #27272a', 
+            borderRadius: '12px' 
+          },
+          success: { 
+            iconTheme: { 
+              primary: '#10b981', 
+              secondary: '#18181c' 
+            } 
+          },
+        }}
+      />
       
       {/* Logo */}
       <NavLink to="/" className="z-20 flex items-center">
@@ -227,7 +250,6 @@ export default function NavBar() {
               <div className="relative" ref={profileRef}>
                 <motion.button
                   onClick={() => {
-                    // On mobile/tablets (< lg), direct straight to dashboard instead of toggling a dropdown
                     if (window.innerWidth < 1024) {
                       navigate('/dashboard');
                     } else {
@@ -304,18 +326,38 @@ export default function NavBar() {
           )}
         </div>
 
-        {/* Flag Ribbon Cart Container */}
-        <motion.div 
-          onClick={() => navigate('/dashboard/cart')}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center justify-center bg-[#2ecc71] w-16 sm:w-20 md:w-32 h-9 sm:h-10 md:h-14 relative cursor-pointer hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-colors duration-300" 
-          style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 20% 50%)' }}
-        >
-          <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-black ml-3 md:ml-4 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-        </motion.div>
+        {/* Flag Ribbon Cart Container with Window Flyout Toggle */}
+        <div className="relative" ref={cartRef}>
+          <motion.div 
+            onClick={() => setIsCartOpen(!isCartOpen)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center justify-center bg-[#2ecc71] w-16 sm:w-20 md:w-32 h-9 sm:h-10 md:h-14 relative cursor-pointer hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-colors duration-300" 
+            style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 20% 50%)' }}
+          >
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-black ml-3 md:ml-4 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+
+            {/* Dynamic Cart Badge */}
+            <AnimatePresence>
+              {totalItems > 0 && (
+                <motion.span 
+                  initial={{ scale: 0, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  exit={{ scale: 0, opacity: 0 }} 
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="absolute top-0.5 right-1.5 sm:top-1 sm:right-2 md:top-2 md:right-4 bg-black text-[#2ecc71] text-[9px] sm:text-[10px] md:text-xs font-black px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-full border border-[#2ecc71]/30 shadow-lg flex items-center justify-center min-w-[16px] min-h-[16px] md:min-w-[20px] md:min-h-[20px]"
+                >
+                  {totalItems}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Cart Dropdown Flyout Window */}
+          <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+        </div>
         
         {/* Tablet & Mobile Menu Hamburger Button (Visible below lg) */}
         <motion.button 

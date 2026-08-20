@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiClient from '../services/api-client';
+import { useCartContext } from '../contexts/CartContext';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -28,6 +29,9 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   
   const [activeMedia, setActiveMedia] = useState({ type: 'image', url: '' });
+
+  // Pull add to cart context
+  const { addToCart } = useCartContext();
 
   useEffect(() => {
     setLoading(true);
@@ -334,7 +338,7 @@ export default function ProductDetails() {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={decreaseQuantity} 
-                      className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center"
+                      className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center cursor-pointer"
                     >
                       -
                     </motion.button>
@@ -345,28 +349,32 @@ export default function ProductDetails() {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={increaseQuantity} 
-                      className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center"
+                      className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center cursor-pointer"
                     >
                       +
                     </motion.button>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 relative z-10">
-                    <motion.button 
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex-1 bg-[#333] hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-white font-bold text-center border border-transparent"
-                    >
-                      Add to cart
-                    </motion.button>
-                    <motion.button 
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="flex-1 bg-[#2ecc71] hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-black font-extrabold text-center border border-transparent"
-                    >
-                      Buy Now
-                    </motion.button>
-                  </div>
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => addToCart(product, quantity)}
+                    className="flex-1 bg-[#333] hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-white font-bold text-center border border-transparent cursor-pointer"
+                  >
+                    Add to cart
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      addToCart(product, quantity);
+                    }}
+                    className="flex-1 bg-[#2ecc71] hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-black font-extrabold text-center border border-transparent cursor-pointer"
+                  >
+                    Buy Now
+                  </motion.button>
+                </div>
                 </>
               )}
             </motion.div>

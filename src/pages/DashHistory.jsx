@@ -2,22 +2,24 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 import {
-  FaShoppingBag,
+  FaClipboardList,
   FaSearch,
   FaFilter,
   FaChevronLeft,
   FaChevronRight,
-  FaTimes,
   FaReceipt,
   FaBoxOpen,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaCreditCard,
+  FaSpinner,
+  FaShieldAlt
 } from 'react-icons/fa';
-import ApiClient from '../services/api-client';
 import AuthApiClient from '../services/auth-api-client';
 
 const DashHistory = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [payingOrderId, setPayingOrderId] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -39,25 +41,66 @@ const DashHistory = () => {
     setCurrentPage(1);
   }, [debouncedSearch, sortOrder, statusFilter]);
 
-  useEffect(() => {
-    const fetchOrderHistory = async () => {
-      try {
-        setIsLoading(true);
-        const response = await AuthApiClient.get('/api/profiles/me/');
-        const profileData = response.data;
-        
-        const orderHistory = profileData.order_history || [];
-        setOrders(orderHistory);
-      } catch (error) {
-        console.error("Error fetching order history:", error);
-        toast.error("Failed to load order history.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchOrderHistory = async () => {
+    try {
+      setIsLoading(true);
+      const response = await AuthApiClient.get('/api/profile/me/');
+      const profileData = response.data;
+      
+      const orderHistory = profileData.order_history || [];
+      setOrders(orderHistory);
+    } catch (error) {
+      console.error("Error fetching order history:", error);
+      toast.error("Failed to load order history.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchOrderHistory();
   }, []);
+
+  const handlePayNow = async (order) => {
+    setPayingOrderId(order.order_id);
+    const toastId = toast.loading("Connecting to SSLCommerz gateway...");
+
+    try {
+      const response = await AuthApiClient.post('/api/payment/initiate/', {
+        orderId: order.order_id,
+        amount: order.total_price,
+        numItems: order.games.reduce((sum, g) => sum + g.quantity, 0)
+      });
+
+      if (response.data && response.data.payment_url) {
+        toast.success("Redirecting to secure gateway...", { id: toastId });
+        window.location.href = response.data.payment_url;
+      } else {
+        throw new Error("Invalid payment gateway response.");
+      }
+    } catch (error) {
+      console.error("Payment initiation error:", error);
+      toast.error(
+        error.response?.data?.error || error.response?.data?.detail || "Payment initiation failed.",
+        { id: toastId }
+      );
+      setPayingOrderId(null);
+    }
+  };
+
+  const getStatusBadgeStyle = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'completed' || s === 'paid') {
+      return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+    }
+    if (s === 'pending') {
+      return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+    }
+    if (s === 'cancelled' || s === 'failed') {
+      return 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+    }
+    return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30';
+  };
 
   const filteredOrders = useMemo(() => {
     let result = orders.filter((order) => {
@@ -108,7 +151,7 @@ const DashHistory = () => {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222222] pb-4 sm:pb-5">
             <div className="flex items-center gap-3">
-              <FaShoppingBag className="text-2xl sm:text-4xl text-white shrink-0" />
+              <FaClipboardList className="text-2xl sm:text-4xl text-white shrink-0" />
               <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
                 Order History
               </h1>
@@ -226,62 +269,82 @@ const DashHistory = () => {
               ))
             ) : (
               <AnimatePresence>
-                {paginatedOrders.map((order) => (
-                  <motion.div
-                    key={order.order_id}
-                    layout
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{ duration: 0.3 }}
-                    className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl p-4 sm:p-5 shadow-lg space-y-3 hover:border-[#383838] transition-all"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#2a2a2a] pb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#121212] border border-[#333] flex items-center justify-center text-emerald-400 shrink-0">
-                          <FaReceipt className="text-sm" />
-                        </div>
-                        <div>
-                          <span className="text-xs text-zinc-400 font-semibold block">Order ID: #{order.order_id}</span>
-                          <span className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
-                            <FaCalendarAlt className="text-[10px]" /> {new Date(order.ordered_at).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
+                {paginatedOrders.map((order) => {
+                  const isPending = order.order_status?.toLowerCase() === 'pending';
 
-                      <div className="flex items-center justify-between sm:justify-end gap-3">
-                        <span className={`text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-lg border uppercase tracking-wider ${
-                          order.order_status?.toLowerCase() === 'completed'
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                        }`}>
-                          {order.order_status}
-                        </span>
-                        <span className="text-sm sm:text-base font-extrabold text-white">
-                          ৳{parseFloat(order.total_price || 0).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Ordered Items Breakdown */}
-                    <div className="space-y-2 pt-1">
-                      <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5">
-                        <FaBoxOpen className="text-emerald-400" /> Purchased Items ({order.games.length})
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {order.games.map((game, idx) => (
-                          <div key={idx} className="bg-[#121212] border border-[#27272a] rounded-xl p-2.5 flex items-center justify-between text-xs">
-                            <span className="font-bold text-zinc-200 truncate pr-2">{game.title}</span>
-                            <div className="flex items-center gap-3 shrink-0">
-                              <span className="text-zinc-400">Qty: {game.quantity}</span>
-                              <span className="font-extrabold text-white">৳{parseFloat(game.price_at_purchase || 0).toFixed(2)}</span>
-                            </div>
+                  return (
+                    <motion.div
+                      key={order.order_id}
+                      layout
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl p-4 sm:p-5 shadow-lg space-y-3 hover:border-[#383838] transition-all"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#2a2a2a] pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-[#121212] border border-[#333] flex items-center justify-center text-emerald-400 shrink-0">
+                            <FaReceipt className="text-sm" />
                           </div>
-                        ))}
+                          <div>
+                            <span className="text-xs text-zinc-400 font-semibold block">Order ID: #{order.order_id}</span>
+                            <span className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
+                              <FaCalendarAlt className="text-[10px]" /> {new Date(order.ordered_at).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+                          <span className={`text-[10px] sm:text-xs font-extrabold px-2.5 py-1 rounded-lg border uppercase tracking-wider ${getStatusBadgeStyle(order.order_status)}`}>
+                            {order.order_status}
+                          </span>
+                          <span className="text-sm sm:text-base font-extrabold text-white">
+                            ৳{parseFloat(order.total_price || 0).toFixed(2)}
+                          </span>
+
+                          {isPending && (
+                            <div className="flex flex-col items-end gap-1">
+                              <button
+                                onClick={() => handlePayNow(order)}
+                                disabled={payingOrderId === order.order_id}
+                                className="px-3 py-1.5 bg-[#2ecc71] hover:bg-[#27ae60] text-black text-xs font-extrabold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                              >
+                                {payingOrderId === order.order_id ? (
+                                  <FaSpinner className="animate-spin text-xs" />
+                                ) : (
+                                  <FaCreditCard className="text-xs" />
+                                )}
+                                <span>Pay Now</span>
+                              </button>
+                              <span className="text-[10px] text-zinc-400 flex items-center gap-1 font-medium">
+                                <FaShieldAlt className="text-emerald-400 text-[10px]" /> Verified by SSLCOMMERZ
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+
+                      {/* Ordered Items Breakdown */}
+                      <div className="space-y-2 pt-1">
+                        <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5">
+                          <FaBoxOpen className="text-emerald-400" /> Ordered Items ({order.games.length})
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {order.games.map((game, idx) => (
+                            <div key={idx} className="bg-[#121212] border border-[#27272a] rounded-xl p-2.5 flex items-center justify-between text-xs">
+                              <span className="font-bold text-zinc-200 truncate pr-2">{game.title}</span>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <span className="text-zinc-400">Qty: {game.quantity}</span>
+                                <span className="font-extrabold text-white">৳{parseFloat(game.price_at_purchase || 0).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             )}
 
