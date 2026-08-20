@@ -121,7 +121,7 @@ export default function Footer() {
                 { name: 'About Us', path: '/about', isExternal: false },
                 { name: 'Dashboard', path: '/dashboard', isExternal: false },
                 { name: 'Privacy & Policy', path: '/privacy', isExternal: false },
-                { name: 'API Docs', path: 'https://awqatapi-production.up.railway.app/', isExternal: true }
+                { name: 'API Docs', path: 'https://awqatapi.vercel.app/', isExternal: true }
               ].map((link) => (
                 <motion.div key={link.name} whileHover={{ x: 5 }}>
                   {link.isExternal ? (

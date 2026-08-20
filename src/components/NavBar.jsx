@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaUser, FaSignOutAlt, FaChevronDown, FaHeart } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import logoImg from '../assets/Awqat_full.png'; 
 import heartImg from '../assets/pics/heart.png';
@@ -9,7 +9,7 @@ import defaultImg from '../assets/pics/profile_icon.svg';
 import { useAuthContext } from '../contexts/AuthContext';
 import GlassSurface from '../components/ReactBits/GlassSurface';
 
-export default function Nav() {
+export default function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
@@ -98,6 +98,8 @@ export default function Nav() {
     exit: { opacity: 0, y: -10 },
   };
 
+  const isCustomer = user && user.groups && user.groups.includes("Customer");
+
   return (
     <motion.nav 
       initial={{ y: -100 }}
@@ -130,11 +132,11 @@ export default function Nav() {
           height={60}
           borderRadius={30}
           blur={11}
-          displace={0}           
-          distortionScale={-180}   
+          displace={0}          
+          distortionScale={-180}  
           redOffset={0}
-          greenOffset={15}         
-          blueOffset={30}           
+          greenOffset={15}        
+          blueOffset={30}          
           brightness={50}
           opacity={0.93}
           backgroundOpacity={0}
@@ -208,17 +210,19 @@ export default function Nav() {
           {/* Auth Section / Profile */}
           {user ? (
             <>
-              {/* Heart Icon (Wishlist) */}
-              <NavLink to="/wishlist" className="flex items-center justify-center" aria-label="Wishlist">
-                <motion.img 
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  src={heartImg} 
-                  alt="Favorite" 
-                  className="w-6 h-6 md:w-7 md:h-7 cursor-pointer object-contain" 
-                  style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(91%) saturate(7483%) hue-rotate(356deg) brightness(99%) contrast(115%)' }}
-                />
-              </NavLink>
+              {/* Heart Icon (Wishlist) - Visible ONLY for Customers */}
+              {isCustomer && (
+                <NavLink to="/dashboard/wishlists" className="flex items-center justify-center" aria-label="Wishlist">
+                  <motion.img 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    src={heartImg} 
+                    alt="Favorite" 
+                    className="w-6 h-6 md:w-7 md:h-7 cursor-pointer object-contain" 
+                    style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(91%) saturate(7483%) hue-rotate(356deg) brightness(99%) contrast(115%)' }}
+                  />
+                </NavLink>
+              )}
 
               <div className="relative" ref={profileRef}>
                 <motion.button

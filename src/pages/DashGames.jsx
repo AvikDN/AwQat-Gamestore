@@ -11,7 +11,8 @@ import {
   FaXmark,
   FaImage,
   FaVideo,
-  FaSpinner
+  FaSpinner,
+  FaTriangleExclamation
 } from 'react-icons/fa6';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,11 +68,12 @@ export default function DashGames() {
   const [categories, setCategories] = useState([]);
   const [studios, setStudios] = useState([]);
 
-  // Modal States
+  // Modal & Tooltip States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentEditId, setCurrentEditId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -89,6 +91,18 @@ export default function DashGames() {
   const [videoFile, setVideoFile] = useState(null);
 
   const topRef = useRef(null);
+  const warningRef = useRef(null);
+
+  // Handle outside click for mobile warning tooltip
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (warningRef.current && !warningRef.current.contains(event.target)) {
+        setShowWarning(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Load Categories & Studios
   useEffect(() => {
@@ -201,7 +215,6 @@ export default function DashGames() {
     setPage(1);
   };
 
-  // Helper to strictly scroll to the form section minus navbar height
   const scrollToFormArea = () => {
     setTimeout(() => {
       if (topRef.current) {
@@ -480,35 +493,73 @@ export default function DashGames() {
               </h1>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              onClick={() => {
-                if (isModalOpen && !isEditing) {
-                  setIsModalOpen(false);
-                } else {
-                  handleOpenAddModal();
-                }
-              }}
-              disabled={isSubmitting}
-              className={`px-4 sm:px-5 py-2.5 font-extrabold rounded-xl border flex items-center justify-center gap-2 text-xs sm:text-sm transition-all shadow-md shrink-0 cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed ${
-                isModalOpen && !isEditing 
-                  ? 'bg-[#333] hover:bg-[#ff6b6b] text-gray-200 hover:text-black border-[#444] hover:border-[#ff6b6b]'
-                  : 'bg-[#1c1c1c] hover:bg-[#2ecc71] text-gray-200 hover:text-black border-[#2a2a2a] hover:border-[#2ecc71]'
-              }`}
-            >
-              {isModalOpen && !isEditing ? (
-                <>
-                  <FaXmark className="text-xs text-gray-300 group-hover:text-black transition-colors" />
-                  <span>Cancel</span>
-                </>
-              ) : (
-                <>
-                  <FaPlus className="text-xs text-gray-300 group-hover:text-black transition-colors" />
-                  <span>Add Game</span>
-                </>
-              )}
-            </motion.button>
+            <div className="flex items-center gap-3">
+              {/* Danger / Warning Tooltip for Vercel Payload Limits */}
+              <div 
+                className="relative flex items-center justify-center" 
+                ref={warningRef}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowWarning(!showWarning)}
+                  className="cursor-pointer p-1"
+                  aria-label="Upload Warning"
+                >
+                  <FaTriangleExclamation className="text-red-500 hover:text-red-400 transition-colors text-xl sm:text-2xl animate-pulse" />
+                </button>
+
+                <AnimatePresence>
+                  {showWarning && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute -right-24 sm:right-0 top-full mt-3 w-72 max-w-[calc(100vw-2rem)] p-4 bg-[#1a1a1a] border border-red-500/30 rounded-xl text-xs text-zinc-300 shadow-2xl z-50 pointer-events-auto"
+                    >
+                      <span className="text-red-400 font-extrabold block mb-2 text-sm">Deployment Limitation</span>
+                      <p className="mb-2">Due to Vercel's 4.5MB payload limit, assets are currently uploaded sequentially. In a real production environment, this operates as a seamless bulk upload.</p>
+                      <p className="text-zinc-400 mt-2">
+                        <strong className="text-amber-400">Risk:</strong> Uploads might timeout or partially fail if file sizes are too large.
+                      </p>
+                      <p className="text-zinc-400 mt-1">
+                        <strong className="text-emerald-400">Fix:</strong> If creation stalls, delete the incomplete game entry and try again with smaller or compressed files.
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => {
+                  if (isModalOpen && !isEditing) {
+                    setIsModalOpen(false);
+                  } else {
+                    handleOpenAddModal();
+                  }
+                }}
+                disabled={isSubmitting}
+                className={`px-4 sm:px-5 py-2.5 font-extrabold rounded-xl border flex items-center justify-center gap-2 text-xs sm:text-sm transition-all shadow-md shrink-0 cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isModalOpen && !isEditing 
+                    ? 'bg-[#333] hover:bg-[#ff6b6b] text-gray-200 hover:text-black border-[#444] hover:border-[#ff6b6b]'
+                    : 'bg-[#1c1c1c] hover:bg-[#2ecc71] text-gray-200 hover:text-black border-[#2a2a2a] hover:border-[#2ecc71]'
+                }`}
+              >
+                {isModalOpen && !isEditing ? (
+                  <>
+                    <FaXmark className="text-xs text-gray-300 group-hover:text-black transition-colors" />
+                    <span>Cancel</span>
+                  </>
+                ) : (
+                  <>
+                    <FaPlus className="text-xs text-gray-300 group-hover:text-black transition-colors" />
+                    <span>Add Game</span>
+                  </>
+                )}
+              </motion.button>
+            </div>
           </div>
 
           {/* Expandable Form Container */}
@@ -528,6 +579,7 @@ export default function DashGames() {
                       {isEditing ? 'Edit Game' : 'Add New Game'}
                     </h2>
                     <button 
+                      type="button"
                       onClick={() => !isSubmitting && setIsModalOpen(false)}
                       disabled={isSubmitting}
                       className="text-zinc-400 hover:text-white transition-colors cursor-pointer disabled:opacity-50"

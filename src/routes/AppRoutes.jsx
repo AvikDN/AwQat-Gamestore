@@ -18,6 +18,8 @@ import DashOrders from "../pages/DashOrders";
 import DashGames from "../pages/DashGames";
 import DashUsers from "../pages/DashUsers";
 import DashStudios from "../pages/DashStudios";
+import DashWishlists from "../pages/DashWishlists";
+import DashHistory from "../pages/DashHistory";
 import Cart from "../pages/Cart";
 import DashReviews from "../pages/DashReviews";
 import AdminCart from "../pages/AdminCart";
@@ -70,6 +72,8 @@ const AppRoutes = () => {
         <Route path="/dashboard/games" element={<DashGames />} />
         <Route path="/dashboard/users" element={<DashUsers />} />
         <Route path="/dashboard/studios" element={<DashStudios />} />
+        <Route path="/dashboard/wishlists" element={<DashWishlists />} />
+        <Route path="/dashboard/history" element={<DashHistory />} />
           
       </Route>
     </Routes>
