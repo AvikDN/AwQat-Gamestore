@@ -131,7 +131,7 @@ export default function Reviews() {
 
                   {/* Review Text */}
                   <div className="text-gray-300 text-base sm:text-lg leading-relaxed mb-6 flex-grow">
-                    "{review.text}"
+                    {review.text}
                   </div>
 
                   {/* Date */}

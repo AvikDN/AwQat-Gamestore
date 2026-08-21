@@ -7,12 +7,30 @@ const CartContext = createContext();
 
 export const useCartContext = () => useContext(CartContext);
 
+const darkStyle = {
+  style: { 
+    background: '#18181c', 
+    color: '#fff', 
+    border: '1px solid #27272a', 
+    borderRadius: '12px',
+    fontSize: '13px',
+    fontWeight: '600'
+  },
+  success: { iconTheme: { primary: '#2ecc71', secondary: '#18181c' } },
+  error: { iconTheme: { primary: '#ef4444', secondary: '#18181c' } }
+};
+
 export const CartProvider = ({ children }) => {
   const { user } = useAuthContext();
   const [cartItems, setCartItems] = useState([]);
   const [cartId, setCartId] = useState(null);
 
+  // Check if user has "Admin" in their groups array
+  const isAdmin = user?.groups?.includes('Admin');
+
   const fetchRemoteCart = async () => {
+    if (isAdmin) return;
+    
     try {
       const res = await authApiClient.get('/api/carts/');
       const cartData = Array.isArray(res.data) ? res.data[0] : res.data;
@@ -26,6 +44,8 @@ export const CartProvider = ({ children }) => {
   };
 
   const syncLocalCart = async () => {
+    if (isAdmin) return;
+
     const localCart = JSON.parse(localStorage.getItem('guestCart')) || [];
     if (localCart.length === 0) {
       fetchRemoteCart();
@@ -70,6 +90,14 @@ export const CartProvider = ({ children }) => {
   }, [user]);
 
   const addToCart = async (gameData, quantity = 1) => {
+    if (isAdmin) {
+      toast.error("Use Client ID to use cart system", {
+        style: darkStyle.style,
+        iconTheme: darkStyle.error.iconTheme
+      });
+      return;
+    }
+
     let gameId;
     let fullGameObj = null;
 
@@ -87,7 +115,7 @@ export const CartProvider = ({ children }) => {
     }
 
     // Trigger toast notification
-    const toastId = toast.loading("Adding to Cart");
+    const toastId = toast.loading("Adding to Cart...", { style: darkStyle.style });
 
     // Instant Optimistic UI Update with correct quantity math
     setCartItems(prevItems => {
@@ -121,7 +149,11 @@ export const CartProvider = ({ children }) => {
       return prevItems;
     });
 
-    toast.success("Cart Updated", { id: toastId });
+    toast.success("Cart Updated", { 
+      id: toastId, 
+      style: darkStyle.style, 
+      iconTheme: darkStyle.success.iconTheme 
+    });
 
     if (user) {
       if (!cartId) return;
@@ -144,6 +176,8 @@ export const CartProvider = ({ children }) => {
   };
 
   const clearCart = async () => {
+    if (isAdmin) return;
+
     localStorage.removeItem('guestCart');
     setCartItems([]);
     if (user && cartId) {

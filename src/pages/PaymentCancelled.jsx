@@ -17,7 +17,7 @@ const PaymentCancelled = () => {
   }, [countdown, navigate]);
 
   return (
-    <div className="min-h-screen font-sans flex items-center justify-center bg-[#121212] p-4 text-white">
+    <div className="min-h-screen font-sans flex items-center justify-center p-4 text-white">
       <motion.div 
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

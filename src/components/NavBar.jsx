@@ -228,7 +228,7 @@ export default function NavBar() {
       {/* Right Section */}
       <div className="flex items-center gap-1 sm:gap-2 md:gap-4 z-20">
         
-        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mr-1 sm:mr-2 md:mr-4">
+       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
           
           {/* Auth Section / Profile */}
           {user ? (
@@ -326,38 +326,44 @@ export default function NavBar() {
           )}
         </div>
 
-        {/* Flag Ribbon Cart Container with Window Flyout Toggle */}
-        <div className="relative" ref={cartRef}>
-          <motion.div 
-            onClick={() => setIsCartOpen(!isCartOpen)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center justify-center bg-[#2ecc71] w-16 sm:w-20 md:w-32 h-9 sm:h-10 md:h-14 relative cursor-pointer hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-colors duration-300" 
-            style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 20% 50%)' }}
-          >
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-black ml-3 md:ml-4 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
+{/* Standard Cart Icon Toggle */}
+<div className="relative flex items-center justify-center" ref={cartRef}>
+  <motion.button 
+    onClick={() => setIsCartOpen(!isCartOpen)}
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+    className="relative flex items-center justify-center cursor-pointer transition-colors"
+    aria-label="Cart"
+  >
+    {/* Standalone Green Cart Icon (No Glow) */}
+    <svg 
+      className="w-6 h-6 md:w-7 md:h-7 text-[#2ecc71] transition-colors" 
+      fill="none" 
+      stroke="currentColor" 
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
 
-            {/* Dynamic Cart Badge */}
-            <AnimatePresence>
-              {totalItems > 0 && (
-                <motion.span 
-                  initial={{ scale: 0, opacity: 0 }} 
-                  animate={{ scale: 1, opacity: 1 }} 
-                  exit={{ scale: 0, opacity: 0 }} 
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="absolute top-0.5 right-1.5 sm:top-1 sm:right-2 md:top-2 md:right-4 bg-black text-[#2ecc71] text-[9px] sm:text-[10px] md:text-xs font-black px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-full border border-[#2ecc71]/30 shadow-lg flex items-center justify-center min-w-[16px] min-h-[16px] md:min-w-[20px] md:min-h-[20px]"
-                >
-                  {totalItems}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.div>
+    {/* Dynamic Cart Badge */}
+    <AnimatePresence>
+      {totalItems > 0 && (
+        <motion.span 
+          initial={{ scale: 0, opacity: 0 }} 
+          animate={{ scale: 1, opacity: 1 }} 
+          exit={{ scale: 0, opacity: 0 }} 
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="absolute -top-1.5 -right-2 bg-white text-black text-[10px] md:text-[11px] font-black px-1.5 py-0.5 rounded-full shadow-sm flex items-center justify-center min-w-[18px] min-h-[18px] border border-gray-200"
+        >
+          {totalItems}
+        </motion.span>
+      )}
+    </AnimatePresence>
+  </motion.button>
 
-          {/* Cart Dropdown Flyout Window */}
-          <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-        </div>
+  {/* Cart Dropdown Flyout Window */}
+  <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+</div>
         
         {/* Tablet & Mobile Menu Hamburger Button (Visible below lg) */}
         <motion.button 

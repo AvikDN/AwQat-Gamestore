@@ -40,12 +40,12 @@ cd awqat-gamestore
 2. Set up the frontend:
 ```bash
 npm install
-npm start
+npm run dev
 
 ```
 
 
-3. Open `http://localhost:3000` to view the frontend in your browser.
+3. Open `http://localhost:5173` to view the frontend in your browser.
 
 ## License
 
