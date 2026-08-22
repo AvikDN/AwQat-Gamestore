@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import logofullImg from '../assets/Awqat_full.png'; 
+import authApiClient from '../services/auth-api-client';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -21,6 +22,10 @@ const itemVariants = {
 };
 
 export default function Footer() {
+  const apiDocsUrl = authApiClient.defaults.baseURL 
+    ? new URL(authApiClient.defaults.baseURL).origin + '/'
+    : 'https://awqatapi.vercel.app/';
+
   return (
     <motion.footer 
       initial="hidden"
@@ -121,7 +126,7 @@ export default function Footer() {
                 { name: 'About Us', path: '/about', isExternal: false },
                 { name: 'Dashboard', path: '/dashboard', isExternal: false },
                 { name: 'Privacy & Policy', path: '/privacy', isExternal: false },
-                { name: 'API Docs', path: 'https://awqatapi.vercel.app/', isExternal: true }
+                { name: 'API Docs', path: apiDocsUrl, isExternal: true }
               ].map((link) => (
                 <motion.div key={link.name} whileHover={{ x: 5 }}>
                   {link.isExternal ? (

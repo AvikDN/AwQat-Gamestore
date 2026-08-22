@@ -50,7 +50,7 @@ const Dashboard = () => {
             });
         } catch (err) {
             console.error("Failed to fetch user:", err);
-            toast.error("Failed to load profile");
+            toast.error("Failed to load profile.");
         } finally {
             setLoading(false);
         }
@@ -88,7 +88,7 @@ const Dashboard = () => {
             loadProfile();
         } catch (error) {
             console.error("Error updating profile:", error);
-            toast.error("Failed to update profile", { id: toastId });
+            toast.error("Failed to update profile.", { id: toastId });
         } finally {
             setSaving(false);
         }
@@ -100,11 +100,15 @@ const Dashboard = () => {
                 position="top-center"
                 toastOptions={{
                     style: {
-                        background: '#333',
+                        background: '#18181c',
                         color: '#fff',
-                        borderRadius: '10px',
+                        border: '1px solid #27272a',
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        fontWeight: '600'
                     },
-                    success: { iconTheme: { primary: '#2ecc71', secondary: '#333' } },
+                    success: { iconTheme: { primary: '#10b981', secondary: '#18181c' } },
+                    error: { iconTheme: { primary: '#ef4444', secondary: '#18181c' } }
                 }}
             />
 
