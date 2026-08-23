@@ -22,7 +22,6 @@ import DashWishlists from "../pages/DashWishlists";
 import DashHistory from "../pages/DashHistory";
 import Cart from "../pages/Cart";
 import DashReviews from "../pages/DashReviews";
-import AdminCart from "../pages/AdminCart";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import ActivationPage from "../pages/ActivationPage";
@@ -68,7 +67,6 @@ const AppRoutes = () => {
         >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/cart" element={<Cart />} />
-        <Route path="/dashboard/carts" element={<AdminCart />} />
         <Route path="/dashboard/categories" element={<DashCategories />} />
         <Route path="/dashboard/reviews" element={<DashReviews />} />
         <Route path="/dashboard/orders" element={<DashOrders />} />

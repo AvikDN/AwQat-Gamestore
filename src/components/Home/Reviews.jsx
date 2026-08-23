@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { FaGamepad, FaQuoteRight, FaStar } from 'react-icons/fa6';
 import apiClient from '../../services/api-client';
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 },
+    transition: { staggerChildren: 0.12 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 50 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 100, damping: 15 },
+    scale: 1,
+    transition: { type: "spring", stiffness: 120, damping: 18 },
   },
 };
 
@@ -25,10 +27,10 @@ export default function Reviews() {
 
   useEffect(() => {
     setIsLoading(true);
-    
     apiClient.get('/reviews/')
       .then(response => {
-        setReviews(response.data.results);
+        const data = response.data.results || response.data;
+        setReviews(data);
         setIsLoading(false);
       })
       .catch(error => {
@@ -37,26 +39,22 @@ export default function Reviews() {
       });
   }, []);
 
-  // Helper function to render stars based on the rating number
+  // Helper function to render stars
   const renderStars = (rating) => {
     const maxStars = 5;
     return (
       <div className="flex gap-1">
         {[...Array(maxStars)].map((_, i) => (
-          <svg 
+          <FaStar 
             key={i} 
-            className={`w-5 h-5 md:w-6 md:h-6 ${i < rating ? 'text-[#2ecc71]' : 'text-gray-600'}`} 
-            fill="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
+            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${i < rating ? 'text-[#2ecc71] drop-shadow-[0_0_8px_rgba(46,204,113,0.5)]' : 'text-zinc-700'}`} 
+          />
         ))}
       </div>
     );
   };
 
-  // Helper function to format the ISO date string
+  // Helper function to format date
   const formatDate = (isoString) => {
     const date = new Date(isoString);
     return date.toLocaleDateString('en-US', {
@@ -67,18 +65,24 @@ export default function Reviews() {
   };
 
   return (
-    <section className="w-full max-w-[1920px] mx-auto py-12 md:py-20 px-4 md:px-8 xl:px-12 overflow-visible">
+    <section className="w-full max-w-[1920px] mx-auto py-16 md:py-24 px-4 md:px-8 xl:px-12 relative overflow-hidden select-none">
       
-      <div className="flex flex-col mb-8 md:mb-12">
-        <motion.h2 
-          className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight"
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          Recent Reviews
-        </motion.h2>
+      {/* Background Ambient Glow FX */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#2ecc71]/5 blur-[140px] pointer-events-none rounded-full" />
+
+      {/* Section Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-4 relative z-10">
+        <div>
+          <motion.h2 
+            className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight"
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            Reviews
+          </motion.h2>
+        </div>
       </div>
 
       <motion.div 
@@ -87,7 +91,7 @@ export default function Reviews() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-50px" }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 xl:gap-8"
+        className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6 relative z-10"
       >
         {isLoading 
           ? [...Array(4)].map((_, index) => (
@@ -96,16 +100,19 @@ export default function Reviews() {
                 variants={itemVariants}
                 className="flex flex-col"
               >
-                <div className="animate-pulse flex flex-col h-full bg-[#1a1a1a] border border-[#333] rounded-2xl md:rounded-[2rem] p-6 sm:p-8">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-[#333] rounded-full"></div>
-                    <div className="flex flex-col gap-2">
-                      <div className="h-5 bg-[#444] rounded w-24"></div>
-                      <div className="h-4 bg-[#222] rounded w-32"></div>
+                <div className="animate-pulse flex flex-col h-full bg-[#18181c] border border-[#27272a] rounded-[22px] p-4 sm:p-6 shadow-xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 bg-[#27272a] rounded-xl shrink-0"></div>
+                    <div className="flex flex-col gap-2 min-w-0 flex-1">
+                      <div className="h-4 bg-[#27272a] rounded w-20"></div>
+                      <div className="h-3 bg-[#27272a] rounded w-14"></div>
                     </div>
                   </div>
-                  <div className="h-20 bg-[#333] rounded w-full mb-4"></div>
-                  <div className="mt-auto h-4 bg-[#222] rounded w-20"></div>
+                  <div className="h-16 sm:h-20 bg-[#27272a] rounded-xl w-full mb-4"></div>
+                  <div className="mt-auto pt-3 border-t border-[#27272a] flex justify-between">
+                    <div className="h-3 bg-[#27272a] rounded w-16"></div>
+                    <div className="h-3 bg-[#27272a] rounded w-12"></div>
+                  </div>
                 </div>
               </motion.div>
             ))
@@ -113,33 +120,53 @@ export default function Reviews() {
               <motion.div
                 key={review.id}
                 variants={itemVariants}
-                whileHover={{ y: -8 }}
+                whileHover={{ y: -6, transition: { duration: 0.2 } }}
                 className="flex flex-col h-full"
               >
-                <div className="flex flex-col h-full bg-[#1a1a1a] border border-[#333] hover:border-[#2ecc71]/50 rounded-2xl md:rounded-[2rem] p-6 sm:p-8 transition-colors duration-300 shadow-xl group">
+                <div className="flex flex-col h-full bg-[#18181c] border border-[#27272a] hover:border-[#2ecc71]/40 rounded-[22px] p-4 sm:p-7 transition-all duration-300 shadow-xl group relative overflow-hidden">
                   
-                  {/* User Info & Rating */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="flex items-center justify-center w-12 h-12 bg-[#2ecc71]/10 rounded-full border border-[#2ecc71]/30 text-[#2ecc71] font-bold text-xl uppercase group-hover:bg-[#2ecc71] group-hover:text-black transition-colors duration-300">
-                      {review.user.charAt(0)}
+                  {/* Subtle Background Cyber Watermark Icon */}
+                  <FaQuoteRight className="absolute right-3 bottom-3 text-6xl text-white/[0.02] pointer-events-none group-hover:text-[#2ecc71]/[0.05] transition-colors duration-300" />
+
+                  {/* User Profile & Rating Row */}
+                  <div className="flex items-center gap-3 mb-4 relative z-10">
+                    <div 
+                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#121212] border border-[#333] flex items-center justify-center shrink-0 bg-cover bg-center overflow-hidden shadow-inner group-hover:border-[#2ecc71]/50 transition-colors"
+                      style={{ backgroundImage: review.user_avatar ? `url(${review.user_avatar})` : 'none' }}
+                    >
+                      {!review.user_avatar && (
+                        <span className="text-[11px] sm:text-xs font-black text-[#2ecc71]">
+                          {review.user ? review.user.substring(0, 2).toUpperCase() : '??'}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-white font-extrabold text-lg sm:text-xl tracking-wide">{review.user}</span>
-                      {renderStars(review.rating)}
+                    
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-white font-extrabold text-xs sm:text-base tracking-tight truncate group-hover:text-[#2ecc71] transition-colors">
+                        {review.user}
+                      </span>
+                      <div className="mt-0.5 scale-90 sm:scale-100 origin-left">
+                        {renderStars(review.rating)}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Review Text */}
-                  <div className="text-gray-300 text-base sm:text-lg leading-relaxed mb-6 flex-grow">
-                    {review.text}
+                  {/* Review Text Body */}
+                  <div className="text-zinc-300 text-xs sm:text-sm font-medium leading-relaxed mb-5 flex-grow relative z-10 line-clamp-4">
+                    "{review.text}"
                   </div>
 
-                  {/* Date */}
-                  <div className="mt-auto pt-4 border-t border-[#333] flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-500">Game ID: {review.game}</span>
-                    <span className="text-sm font-medium text-gray-500">{formatDate(review.created_at)}</span>
+                  {/* Game Tag & Timestamp Footer (Stacked cleanly on mobile to prevent clipping) */}
+                  <div className="mt-auto pt-3 border-t border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-2 relative z-10">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#121212] border border-[#333] text-[10px] sm:text-xs font-bold text-zinc-300 truncate w-full sm:w-auto" title={review.game_title || `Game #${review.game}`}>
+                      <FaGamepad className="w-3 h-3 text-[#2ecc71] shrink-0" />
+                      <span className="truncate">{review.game_title || `Game #${review.game}`}</span>
+                    </span>
+                    <span className="text-[10px] sm:text-[11px] font-semibold text-zinc-500 self-end sm:self-auto shrink-0">
+                      {formatDate(review.created_at)}
+                    </span>
                   </div>
-                  
+
                 </div>
               </motion.div>
             ))

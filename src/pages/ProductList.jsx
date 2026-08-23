@@ -43,19 +43,50 @@ export default function ProductList() {
     setDebouncedSearch(urlSearchQuery);
   }, [urlSearchQuery]);
 
-  // Fetch Studios and Categories on mount
+  // Fetch ALL Studios and Categories (Handling Pagination)
   useEffect(() => {
-    Promise.all([
-      apiClient.get('/studios/'),
-      apiClient.get('/categories/')
-    ])
-      .then(([studiosRes, categoriesRes]) => {
-        setStudios(studiosRes.data.results || []);
-        setCategories(categoriesRes.data.results || []);
-      })
-      .catch(error => {
-        console.error("Error fetching studios/categories:", error);
-      });
+    const fetchAllPages = async (endpoint) => {
+      let results = [];
+      let url = endpoint;
+      
+      while (url) {
+        try {
+          const isAbsolute = url.startsWith('http');
+          const requestUrl = isAbsolute ? `${new URL(url).pathname}${new URL(url).search}` : url;
+          
+          const res = await apiClient.get(requestUrl);
+          
+          if (res.data && res.data.results) {
+            results = [...results, ...res.data.results];
+            url = res.data.next;
+          } else if (Array.isArray(res.data)) {
+            results = [...results, ...res.data];
+            url = null;
+          } else {
+            url = null;
+          }
+        } catch (error) {
+          console.error(`Error fetching all pages for ${endpoint}:`, error);
+          break;
+        }
+      }
+      return results;
+    };
+
+    const loadFilters = async () => {
+      try {
+        const [allStudios, allCategories] = await Promise.all([
+          fetchAllPages('/studios/'),
+          fetchAllPages('/categories/')
+        ]);
+        setStudios(allStudios);
+        setCategories(allCategories);
+      } catch (error) {
+        console.error("Error loading filters:", error);
+      }
+    };
+
+    loadFilters();
   }, []);
 
   // Debounce search and price terms to prevent rapid API calls

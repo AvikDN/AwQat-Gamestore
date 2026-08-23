@@ -39,7 +39,6 @@ export default function Sidebar() {
     { name: 'Studios', path: '/dashboard/studios', icon: <SiRobloxstudio className="text-xl" /> },
     { name: 'Reviews', path: '/dashboard/reviews', icon: <FaStar className="text-xl" /> },
     { name: 'Orders', path: '/dashboard/orders', icon: <FaClipboardList className="text-xl" /> },
-    { name: 'Carts', path: '/dashboard/carts', icon: <FaShoppingCart className="text-xl" /> },
     { name: 'Users', path: '/dashboard/users', icon: <FaUsers className="text-xl" /> },
   ];
 

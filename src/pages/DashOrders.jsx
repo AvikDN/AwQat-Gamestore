@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 import authApiClient from '../services/auth-api-client';
@@ -16,7 +16,8 @@ import {
   FaBan,
   FaBoxOpen,
   FaTruckLoading,
-  FaClock
+  FaClock,
+  FaSpinner
 } from 'react-icons/fa';
 
 const darkStyle = {
@@ -35,6 +36,7 @@ const darkStyle = {
 const DashOrder = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Search, Sort & Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +47,9 @@ const DashOrder = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+  const itemsPerPage = 16;
 
   // Debounce Search
   useEffect(() => {
@@ -60,20 +64,46 @@ const DashOrder = () => {
     setCurrentPage(1);
   }, [debouncedSearch, sortOrder, statusFilter]);
 
-  // Fetch Orders from API
+  // Fetch Orders from Backend
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setIsLoading(true);
-        const res = await authApiClient.get('/api/orders/');
-        const data = Array.isArray(res.data) ? res.data : (res.data.results || []);
 
-        const formattedOrders = data.map(order => ({
+        // Build API query parameters
+        const queryParams = new URLSearchParams({
+          page: currentPage,
+          page_size: itemsPerPage
+        });
+
+        if (debouncedSearch) {
+          queryParams.append('search', debouncedSearch);
+        }
+
+        if (statusFilter !== 'ALL') {
+          queryParams.append('status', statusFilter);
+        }
+
+        if (sortOrder === 'desc') {
+          queryParams.append('ordering', '-created_at');
+        } else if (sortOrder === 'asc') {
+          queryParams.append('ordering', 'created_at');
+        }
+
+        const res = await authApiClient.get(`/api/orders/?${queryParams.toString()}`);
+        const data = res.data;
+
+        setTotalCount(data.count || 0);
+        setHasNext(!!data.next);
+        setHasPrev(!!data.previous);
+
+        const results = Array.isArray(data) ? data : (data.results || []);
+
+        const formattedOrders = results.map(order => ({
           id: order.id,
           status: order.status || 'Pending',
           totalAmount: parseFloat(order.total_amount || 0),
           createdDate: new Date(order.created_at).toLocaleString(),
-          rawDate: new Date(order.created_at).getTime(),
           updatedDate: new Date(order.updated_at).toLocaleString(),
           items: (order.items || []).map(item => ({
             id: item.id,
@@ -94,9 +124,9 @@ const DashOrder = () => {
     };
 
     fetchOrders();
-  }, []);
+  }, [currentPage, debouncedSearch, statusFilter, sortOrder]);
 
-  // Update Status Handler (Admin can change to any status)
+  // Update Status Handler (Optimistic UI Update)
   const handleStatusChange = async (orderId, newStatus) => {
     const previousOrders = [...orders];
 
@@ -126,38 +156,6 @@ const DashOrder = () => {
     }
   };
 
-  // Filter & Sort Logic
-  const filteredOrders = useMemo(() => {
-    let result = orders.filter((order) => {
-      const matchesSearch =
-        order.id.toString().includes(debouncedSearch) ||
-        order.items.some((item) =>
-          item.name.toLowerCase().includes(debouncedSearch.toLowerCase())
-        );
-
-      const matchesStatus =
-        statusFilter === 'ALL' ||
-        order.status.toUpperCase() === statusFilter.toUpperCase();
-
-      return matchesSearch && matchesStatus;
-    });
-
-    result.sort((a, b) => {
-      if (sortOrder === 'asc') return a.rawDate - b.rawDate;
-      return b.rawDate - a.rawDate;
-    });
-
-    return result;
-  }, [orders, debouncedSearch, statusFilter, sortOrder]);
-
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
-  const paginatedOrders = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredOrders.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredOrders, currentPage, itemsPerPage]);
-
-  // Status Badge Helper
   const getStatusBadge = (status) => {
     const s = status.toUpperCase();
     if (s === 'COMPLETED') {
@@ -192,13 +190,15 @@ const DashOrder = () => {
     );
   };
 
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
+
   return (
     <div className="w-full min-h-screen bg-transparent text-white font-sans p-3 sm:p-6 lg:p-8 flex justify-center items-start select-none">
       <Toaster position="top-center" containerStyle={{ zIndex: 999999 }} />
 
       <div className="w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 md:space-y-8 relative pt-2 sm:pt-4 md:pt-8">
 
-        {/* Floating Section Header */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222222] pb-4 sm:pb-5">
           <div className="flex items-center gap-3">
             <FaClipboardList className="text-2xl sm:text-4xl text-white shrink-0" />
@@ -288,14 +288,14 @@ const DashOrder = () => {
                 className={`flex-1 sm:flex-none px-3 py-2 rounded-xl font-bold text-[10px] sm:text-xs md:text-sm border transition cursor-pointer text-center ${
                   statusFilter === tab.id
                     ? tab.id === 'COMPLETED'
-                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/80'
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/80 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
                       : tab.id === 'PROCESSING'
-                      ? 'bg-sky-500/20 text-sky-400 border-sky-500/80'
+                      ? 'bg-sky-500/20 text-sky-400 border-sky-500/80 shadow-[0_0_12px_rgba(14,165,233,0.2)]'
                       : tab.id === 'PENDING'
-                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/80'
+                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
                       : tab.id === 'CANCELLED'
-                      ? 'bg-rose-500/20 text-rose-400 border-rose-500/80'
-                      : 'bg-[#2ecc71] text-black border-[#2ecc71]'
+                      ? 'bg-rose-500/20 text-rose-400 border-rose-500/80 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
+                      : 'bg-[#2ecc71] text-black border-[#2ecc71] shadow-[0_0_12px_rgba(46,204,113,0.2)]'
                     : 'bg-[#121212] text-zinc-400 border-[#333] hover:border-zinc-500'
                 }`}
               >
@@ -312,7 +312,6 @@ const DashOrder = () => {
             [...Array(4)].map((_, index) => (
               <div key={`skeleton-${index}`} className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] p-5 sm:p-6 shadow-xl space-y-5">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#262626] pb-4">
-                  {/* Skeleton Header Left */}
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#2a2a2a] animate-pulse shrink-0"></div>
                     <div className="space-y-2">
@@ -320,11 +319,11 @@ const DashOrder = () => {
                       <div className="h-3 bg-[#2a2a2a] animate-pulse rounded w-48"></div>
                     </div>
                   </div>
-                  {/* Skeleton Header Right */}
                   <div className="flex items-center justify-between sm:justify-end gap-6 w-full md:w-auto">
+                    <div className="h-8 bg-[#2a2a2a] animate-pulse rounded-lg w-20"></div>
                     <div className="space-y-2 text-right">
                       <div className="h-3 bg-[#2a2a2a] animate-pulse rounded w-16 ml-auto"></div>
-                      <div className="h-6 bg-[#2a2a2a] animate-pulse rounded w-24 ml-auto"></div>
+                      <div className="h-6 sm:h-8 bg-[#2a2a2a] animate-pulse rounded w-24 ml-auto"></div>
                     </div>
                     <div className="space-y-2">
                       <div className="h-3 bg-[#2a2a2a] animate-pulse rounded w-20"></div>
@@ -332,7 +331,6 @@ const DashOrder = () => {
                     </div>
                   </div>
                 </div>
-                {/* Skeleton Items List */}
                 <div className="space-y-3">
                   <div className="h-4 bg-[#2a2a2a] animate-pulse rounded w-40"></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -354,12 +352,12 @@ const DashOrder = () => {
             ))
           ) : (
             <AnimatePresence>
-              {filteredOrders.length === 0 ? (
+              {orders.length === 0 ? (
                 <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl p-10 text-center text-gray-500 font-medium text-xs sm:text-sm">
                   No orders found matching your search query.
                 </div>
               ) : (
-                paginatedOrders.map((order) => (
+                orders.map((order) => (
                   <motion.div
                     key={order.id}
                     layout
@@ -368,10 +366,8 @@ const DashOrder = () => {
                     exit={{ opacity: 0, scale: 0.96 }}
                     className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] p-5 sm:p-6 shadow-xl space-y-5 transition-all duration-300 relative overflow-hidden group hover:border-[#383838]"
                   >
-                    {/* Top Order Card Header */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#262626] pb-4">
                       
-                      {/* Left Side: Order ID & Meta Info */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-3">
                           <h2 className="text-lg font-black text-white transition-colors">
@@ -392,7 +388,6 @@ const DashOrder = () => {
                         </div>
                       </div>
 
-                      {/* Right Side: Total Amount & Status Dropdown Selector */}
                       <div className="flex items-center justify-between sm:justify-end gap-6 self-stretch md:self-auto pt-2 md:pt-0 border-t md:border-t-0 border-[#262626]">
                         <div className="text-left md:text-right">
                           <div className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
@@ -403,7 +398,6 @@ const DashOrder = () => {
                           </div>
                         </div>
 
-                        {/* Admin Status Updater */}
                         <div className="space-y-1">
                           <label className="text-[10px] text-gray-400 font-bold block">
                             Update Status
@@ -426,7 +420,6 @@ const DashOrder = () => {
 
                     </div>
 
-                    {/* Order Items List Box */}
                     <div className="space-y-3">
                       <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
                         <FaBoxOpen className="text-emerald-400 text-sm" /> Ordered Items ({order.items?.length || 0})
@@ -467,11 +460,11 @@ const DashOrder = () => {
         </div>
 
         {/* Pagination Controls */}
-        {!isLoading && filteredOrders.length > itemsPerPage && (
+        {!isLoading && totalCount > itemsPerPage && (
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 pt-4 pb-2">
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              disabled={!hasPrev}
               className="w-full sm:w-auto px-4 py-2 bg-[#1c1c1c] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:hover:bg-[#1c1c1c] text-zinc-300 text-xs font-extrabold rounded-xl border border-[#2a2a2a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
             >
               <FaChevronLeft className="text-[10px]" /> Previous
@@ -482,8 +475,8 @@ const DashOrder = () => {
             </span>
 
             <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              disabled={!hasNext}
               className="w-full sm:w-auto px-4 py-2 bg-[#1c1c1c] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:hover:bg-[#1c1c1c] text-zinc-300 text-xs font-extrabold rounded-xl border border-[#2a2a2a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
             >
               Next <FaChevronRight className="text-[10px]" />

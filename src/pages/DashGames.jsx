@@ -104,15 +104,50 @@ export default function DashGames() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Load Categories & Studios
+  // Fetch ALL Studios and Categories (Handling Pagination)
   useEffect(() => {
-    Promise.all([
-      ApiClient.get('/categories/'),
-      ApiClient.get('/studios/')
-    ]).then(([catRes, studioRes]) => {
-      setCategories(catRes.data.results || catRes.data);
-      setStudios(studioRes.data.results || studioRes.data);
-    }).catch(err => console.error("Error loading dependencies:", err));
+    const fetchAllPages = async (endpoint) => {
+      let results = [];
+      let url = endpoint;
+      
+      while (url) {
+        try {
+          const isAbsolute = url.startsWith('http');
+          const requestUrl = isAbsolute ? `${new URL(url).pathname}${new URL(url).search}` : url;
+          
+          const res = await ApiClient.get(requestUrl);
+          
+          if (res.data && res.data.results) {
+            results = [...results, ...res.data.results];
+            url = res.data.next;
+          } else if (Array.isArray(res.data)) {
+            results = [...results, ...res.data];
+            url = null;
+          } else {
+            url = null;
+          }
+        } catch (error) {
+          console.error(`Error fetching all pages for ${endpoint}:`, error);
+          break;
+        }
+      }
+      return results;
+    };
+
+    const loadFilters = async () => {
+      try {
+        const [allCategories, allStudios] = await Promise.all([
+          fetchAllPages('/categories/'),
+          fetchAllPages('/studios/')
+        ]);
+        setCategories(allCategories);
+        setStudios(allStudios);
+      } catch (error) {
+        console.error("Error loading dependencies:", error);
+      }
+    };
+
+    loadFilters();
   }, []);
 
   // Debounce Search & Price

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
 import {
@@ -22,6 +22,7 @@ const DashHistory = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [payingOrderId, setPayingOrderId] = useState(null);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -30,8 +31,11 @@ const DashHistory = () => {
   const [statusFilter, setStatusFilter] = useState('all');
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+  const itemsPerPage = 16;
 
+  // Debounce Search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
@@ -39,29 +43,71 @@ const DashHistory = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch, sortOrder, statusFilter]);
 
-  const fetchOrderHistory = async () => {
-    try {
-      setIsLoading(true);
-      const response = await AuthApiClient.get('/api/profile/me/');
-      const profileData = response.data;
-      
-      const orderHistory = profileData.order_history || [];
-      setOrders(orderHistory);
-    } catch (error) {
-      console.error("Error fetching order history:", error);
-      toast.error("Failed to load order history.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Fetch Orders directly using backend filtering, sorting, and pagination
   useEffect(() => {
+    const fetchOrderHistory = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Build API query parameters
+        const queryParams = new URLSearchParams({
+          page: currentPage,
+          page_size: itemsPerPage
+        });
+
+        if (debouncedSearch) {
+          queryParams.append('search', debouncedSearch);
+        }
+
+        if (statusFilter !== 'all') {
+          queryParams.append('status', statusFilter);
+        }
+
+        if (sortOrder === 'desc') {
+          queryParams.append('ordering', '-created_at');
+        } else if (sortOrder === 'asc') {
+          queryParams.append('ordering', 'created_at');
+        }
+
+        const response = await AuthApiClient.get(`/api/orders/?${queryParams.toString()}`);
+        const data = response.data;
+        
+        setTotalCount(data.count || 0);
+        setHasNext(!!data.next);
+        setHasPrev(!!data.previous);
+
+        const results = Array.isArray(data) ? data : (data.results || []);
+
+        // Map backend order format to frontend requirements
+        const mappedOrders = results.map(order => ({
+          order_id: order.id,
+          order_status: order.status || 'Pending',
+          total_price: parseFloat(order.total_amount || 0),
+          ordered_at: order.created_at,
+          games: (order.items || []).map(item => ({
+            game_id: item.game,
+            title: item.game_title || item.game?.title || 'Unknown Game',
+            price_at_purchase: parseFloat(item.price_at_purchase || 0),
+            quantity: item.quantity
+          }))
+        }));
+        
+        setOrders(mappedOrders);
+      } catch (error) {
+        console.error("Error fetching order history:", error);
+        toast.error("Failed to load order history.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchOrderHistory();
-  }, []);
+  }, [currentPage, debouncedSearch, sortOrder, statusFilter]);
 
   const handlePayNow = async (order) => {
     setPayingOrderId(order.order_id);
@@ -134,36 +180,7 @@ const DashHistory = () => {
     return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30';
   };
 
-  const filteredOrders = useMemo(() => {
-    let result = orders.filter((order) => {
-      const orderIdStr = String(order.order_id || '');
-      const matchesSearch =
-        orderIdStr.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        order.games?.some((g) => g.title.toLowerCase().includes(debouncedSearch.toLowerCase()));
-
-      const matchesStatus =
-        statusFilter === 'all'
-          ? true
-          : order.order_status?.toLowerCase() === statusFilter.toLowerCase();
-
-      return matchesSearch && matchesStatus;
-    });
-
-    result.sort((a, b) => {
-      const dateA = new Date(a.ordered_at).getTime();
-      const dateB = new Date(b.ordered_at).getTime();
-      if (sortOrder === 'asc') return dateA - dateB;
-      return dateB - dateA;
-    });
-
-    return result;
-  }, [orders, debouncedSearch, sortOrder, statusFilter]);
-
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
-  const paginatedOrders = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredOrders.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredOrders, currentPage, itemsPerPage]);
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   return (
     <div className="w-full min-h-screen bg-transparent text-white font-sans p-3 sm:p-6 lg:p-8 flex justify-center items-start select-none">
@@ -214,7 +231,7 @@ const DashHistory = () => {
                 <button
                   onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
                   className={`px-3 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 border transition cursor-pointer relative z-40 ${
-                    sortOrder !== 'default'
+                    sortOrder !== 'desc'
                       ? 'bg-[#2ecc71] text-black border-[#2ecc71] shadow-[0_0_12px_rgba(46,204,113,0.3)]'
                       : 'bg-[#121212] text-gray-300 border-[#333] hover:border-gray-500'
                   }`}
@@ -338,9 +355,9 @@ const DashHistory = () => {
                   </div>
                 </div>
               ))
-            ) : paginatedOrders.length > 0 ? (
+            ) : orders.length > 0 ? (
               <AnimatePresence>
-                {paginatedOrders.map((order) => {
+                {orders.map((order) => {
                   const isPending = order.order_status?.toLowerCase() === 'pending';
 
                   return (
@@ -439,7 +456,7 @@ const DashHistory = () => {
                 })}
               </AnimatePresence>
             ) : (
-              <div className="text-center py-16 bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl shadow-lg">
+              <div className="text-center py-16 bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] shadow-lg">
                 <FaClipboardList className="mx-auto text-4xl text-zinc-600 mb-3" />
                 <p className="text-zinc-400 text-sm font-semibold">
                   No order history found matching your selected criteria.
@@ -449,11 +466,11 @@ const DashHistory = () => {
           </div>
 
           {/* Pagination Controls */}
-          {!isLoading && filteredOrders.length > itemsPerPage && (
+          {!isLoading && totalCount > itemsPerPage && (
             <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 pt-4 pb-2">
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
+                disabled={!hasPrev}
                 className="w-full sm:w-auto px-4 py-2 bg-[#1c1c1c] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:hover:bg-[#1c1c1c] text-zinc-300 text-xs font-extrabold rounded-xl border border-[#2a2a2a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
               >
                 <FaChevronLeft className="text-[10px]" /> Previous
@@ -464,8 +481,8 @@ const DashHistory = () => {
               </span>
 
               <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                disabled={!hasNext}
                 className="w-full sm:w-auto px-4 py-2 bg-[#1c1c1c] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:hover:bg-[#1c1c1c] text-zinc-300 text-xs font-extrabold rounded-xl border border-[#2a2a2a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
               >
                 Next <FaChevronRight className="text-[10px]" />
@@ -474,10 +491,10 @@ const DashHistory = () => {
           )}
 
           {/* Footer Count */}
-          {!isLoading && filteredOrders.length <= itemsPerPage && filteredOrders.length > 0 && (
+          {!isLoading && totalCount <= itemsPerPage && totalCount > 0 && (
             <div className="flex items-center justify-between text-xs text-zinc-500 px-2 pt-2">
               <p>
-                Showing all <span className="font-bold text-zinc-300">{filteredOrders.length}</span> matching orders
+                Showing all <span className="font-bold text-zinc-300">{totalCount}</span> matching orders
               </p>
             </div>
           )}

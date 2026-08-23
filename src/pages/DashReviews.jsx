@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaStar, 
   FaArrowTrendUp, 
@@ -7,42 +7,77 @@ import {
   FaMagnifyingGlass, 
   FaTrashCan, 
   FaMessage,
-  FaChevronDown
-} from 'react-icons/fa6';
-
-import {
-  FaEdit,
-  FaSave,
-  FaTimes,
+  FaChevronDown,
+  FaChevronLeft,
+  FaChevronRight,
   FaSpinner
-} from 'react-icons/fa';
+} from 'react-icons/fa6';
+import { motion } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
-import ApiClient from '../services/api-client';
 import AuthApiClient from '../services/auth-api-client';
 
 export default function Dashreview() {
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [totalCount, setTotalCount] = useState(0);
+
   // Filtering & Sorting
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [filterRating, setFilterRating] = useState('all');
 
-  // Edit State
-  const [editingId, setEditingId] = useState(null);
-  const [editText, setEditText] = useState('');
-  const [editRating, setEditRating] = useState(5);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+  const itemsPerPage = 16;
 
-  // Fetch Reviews
+  // Debounce Search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filterRating, sortBy]);
+
+  // Fetch Reviews from Backend
   useEffect(() => {
     const fetchReviews = async () => {
       try {
         setIsLoading(true);
-        const response = await ApiClient.get('/reviews/');
-        const data = response.data.results || response.data;
-        setReviews(data);
+        const queryParams = new URLSearchParams({
+          page: currentPage,
+          page_size: itemsPerPage
+        });
+
+        if (debouncedSearch) {
+          queryParams.append('search', debouncedSearch);
+        }
+
+        if (filterRating !== 'all') {
+          queryParams.append('rating', filterRating);
+        }
+
+        if (sortBy === 'newest') queryParams.append('ordering', '-created_at');
+        if (sortBy === 'oldest') queryParams.append('ordering', 'created_at');
+        if (sortBy === 'highest') queryParams.append('ordering', '-rating');
+        if (sortBy === 'lowest') queryParams.append('ordering', 'rating');
+
+        const response = await AuthApiClient.get(`/api/reviews/?${queryParams.toString()}`);
+        const data = response.data;
+
+        setTotalCount(data.count || 0);
+        setHasNext(!!data.next);
+        setHasPrev(!!data.previous);
+
+        const results = Array.isArray(data) ? data : (data.results || []);
+        setReviews(results);
       } catch (error) {
         console.error("Error fetching reviews:", error);
         toast.error("Failed to load reviews.");
@@ -52,91 +87,23 @@ export default function Dashreview() {
     };
 
     fetchReviews();
-  }, []);
-
-  // Filter & Sort Logic
-  const filteredReviews = useMemo(() => {
-    return reviews
-      .filter((review) => {
-        const rUser = review.user || '';
-        const rText = review.text || '';
-        const rGame = review.game ? review.game.toString() : '';
-
-        const matchesSearch = 
-          rUser.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          rText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          rGame.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        const matchesRating = 
-          filterRating === 'all' ? true : review.rating === Number(filterRating);
-
-        return matchesSearch && matchesRating;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.created_at || 0).getTime();
-        const dateB = new Date(b.created_at || 0).getTime();
-
-        if (sortBy === 'newest') return dateB - dateA;
-        if (sortBy === 'oldest') return dateA - dateB;
-        if (sortBy === 'highest') return Number(b.rating) - Number(a.rating);
-        if (sortBy === 'lowest') return Number(a.rating) - Number(b.rating);
-        return 0;
-      });
-  }, [reviews, searchQuery, filterRating, sortBy]);
+  }, [currentPage, debouncedSearch, filterRating, sortBy]);
 
   // Metrics
-  const totalReviews = reviews.length;
-  const avgRating = totalReviews > 0 
-    ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / totalReviews).toFixed(1)
+  const totalReviews = totalCount;
+  const avgRating = reviews.length > 0 
+    ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length).toFixed(1)
     : '0.0';
   const uniqueUsers = new Set(reviews.map((r) => r.user)).size;
   const gamesReviewed = new Set(reviews.map((r) => r.game)).size;
 
-  // --- Handlers for Editing ---
-  const handleStartEdit = (review) => {
-    setEditingId(review.id);
-    setEditText(review.text);
-    setEditRating(review.rating);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditText('');
-    setEditRating(5);
-  };
-
-  const handleSaveEdit = async (id) => {
-    if (!editText.trim()) {
-      toast.error("Review text cannot be empty.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    const toastId = toast.loading("Updating review...");
-    
-    try {
-      const response = await AuthApiClient.patch(`/reviews/${id}/`, {
-        text: editText.trim(),
-        rating: editRating
-      });
-      
-      setReviews(prev => prev.map(r => r.id === id ? response.data : r));
-      setEditingId(null);
-      toast.success("Review updated successfully!", { id: toastId });
-    } catch (error) {
-      console.error("Error updating review:", error);
-      toast.error("Failed to update review.", { id: toastId });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // --- Handlers for Deletion ---
+  // Deletion Handlers
   const executeDelete = async (id) => {
     const toastId = toast.loading("Deleting review...");
     try {
-      await AuthApiClient.delete(`/reviews/${id}/`);
+      await AuthApiClient.delete(`reviews/${id}/`);
       setReviews(prev => prev.filter(r => r.id !== id));
+      setTotalCount(prev => prev - 1);
       toast.success("Review deleted!", { id: toastId });
     } catch (error) {
       console.error("Error deleting review:", error);
@@ -154,7 +121,7 @@ export default function Dashreview() {
           <div className="flex gap-2 justify-end mt-1">
             <button
               onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-black text-gray-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-[#2a2a2a] hover:bg-[#333] text-gray-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -163,7 +130,7 @@ export default function Dashreview() {
                 toast.dismiss(t.id);
                 executeDelete(id); 
               }}
-              className="px-3 py-1.5 bg-[#f87171] hover:bg-[#ef4444] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
             >
               Delete
             </button>
@@ -173,113 +140,114 @@ export default function Dashreview() {
       {
         duration: Infinity,
         style: {
-          background: '#333',
+          background: '#18181c',
           color: '#fff',
-          border: '1px solid #444',
-          borderRadius: '10px',
+          border: '1px solid #27272a',
+          borderRadius: '12px',
+          fontSize: '13px',
+          fontWeight: '600'
         }
       }
     );
   };
 
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
+
   return (
-    <div className="w-full min-h-screen bg-transparent text-zinc-100 p-4 sm:p-6 lg:p-8 font-sans flex justify-center items-start">
+    <div className="w-full min-h-screen bg-transparent text-zinc-100 p-3 sm:p-6 lg:p-8 font-sans flex justify-center items-start select-none">
       
-      {/* Dark Theme Toaster */}
       <Toaster 
         position="top-center"
         toastOptions={{
-          style: { background: '#333', color: '#fff', borderRadius: '10px' },
-          success: { iconTheme: { primary: '#10b981', secondary: '#333' } },
+          style: { background: '#18181c', color: '#fff', border: '1px solid #27272a', borderRadius: '12px', fontSize: '13px', fontWeight: '600' },
+          success: { iconTheme: { primary: '#10b981', secondary: '#18181c' } },
+          error: { iconTheme: { primary: '#f87171', secondary: '#18181c' } }
         }}
       />
 
-      {/* Transparent Layout Wrapper with Increased Max Width */}
-      <div className="w-full max-w-[1600px] mx-auto space-y-6 md:space-y-8 relative pt-4 md:pt-8">
+      <div className="w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 md:space-y-8 relative pt-2 sm:pt-4 md:pt-8">
         
-        {/* Floating Header Section */}
-        <div className="flex flex-col gap-1 pb-5 md:pb-6 border-b border-[#27272a]">
-          <div className="flex items-center gap-3.5">
-            <FaStar className="text-3xl sm:text-4xl text-white shrink-0" />
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
-              Customer Reviews
-            </h1>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222222] pb-4 sm:pb-5">
+          <div className="flex items-center gap-3">
+            <FaStar className="text-2xl sm:text-4xl text-white shrink-0" />
+            <div>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+                Customer Reviews
+              </h1>
+            </div>
           </div>
         </div>
 
         {/* Top Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {/* Total Reviews */}
-          <div className="bg-[#202025] border border-[#2e2e33] rounded-2xl p-5 sm:p-6 flex items-center justify-between shadow-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] p-4 sm:p-5 flex items-center justify-between shadow-lg">
             <div>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Reviews</p>
-              <p className="text-2xl sm:text-3xl font-black mt-2 text-white">{isLoading ? '-' : totalReviews}</p>
+              <p className="text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total Reviews</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1 text-white">{isLoading ? '-' : totalReviews}</p>
             </div>
-            <FaStar className="w-7 h-7 text-white" />
+            <FaStar className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 opacity-80" />
           </div>
 
-          {/* Average Rating */}
-          <div className="bg-[#202025] border border-[#2e2e33] rounded-2xl p-5 sm:p-6 flex items-center justify-between shadow-lg">
+          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] p-4 sm:p-5 flex items-center justify-between shadow-lg">
             <div>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Average Rating</p>
-              <p className="text-2xl sm:text-3xl font-black mt-2 text-white">{isLoading ? '-' : avgRating}</p>
+              <p className="text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">Average Rating</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1 text-white">{isLoading ? '-' : avgRating}</p>
             </div>
-            <FaArrowTrendUp className="w-7 h-7 text-white" />
+            <FaArrowTrendUp className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 opacity-80" />
           </div>
 
-          {/* Unique Users */}
-          <div className="bg-[#202025] border border-[#2e2e33] rounded-2xl p-5 sm:p-6 flex items-center justify-between shadow-lg">
+          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] p-4 sm:p-5 flex items-center justify-between shadow-lg">
             <div>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Unique Users</p>
-              <p className="text-2xl sm:text-3xl font-black mt-2 text-white">{isLoading ? '-' : uniqueUsers}</p>
+              <p className="text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">Unique Users</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1 text-white">{isLoading ? '-' : uniqueUsers}</p>
             </div>
-            <FaUsers className="w-7 h-7 text-white" />
+            <FaUsers className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 opacity-80" />
           </div>
 
-          {/* Games Reviewed */}
-          <div className="bg-[#202025] border border-[#2e2e33] rounded-2xl p-5 sm:p-6 flex items-center justify-between shadow-lg">
+          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] p-4 sm:p-5 flex items-center justify-between shadow-lg">
             <div>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Games Reviewed</p>
-              <p className="text-2xl sm:text-3xl font-black mt-2 text-white">{isLoading ? '-' : gamesReviewed}</p>
+              <p className="text-[10px] sm:text-xs font-semibold text-zinc-400 uppercase tracking-wider">Games Reviewed</p>
+              <p className="text-2xl sm:text-3xl font-black mt-1 text-white">{isLoading ? '-' : gamesReviewed}</p>
             </div>
-            <FaGamepad className="w-7 h-7 text-white" />
+            <FaGamepad className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500 opacity-80" />
           </div>
         </div>
 
         {/* Search & Filters */}
-        <div className="bg-[#202025] border border-[#2e2e33] rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
-          <div className="relative w-full md:w-96">
-            <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+        <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] p-3 sm:p-5 shadow-lg flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4">
+          <div className="relative w-full lg:flex-1 max-w-md">
+            <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
             <input
               type="text"
               placeholder="Search reviews, games, or users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[#18181c] border border-[#2e2e33] rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#10b981] transition-colors"
+              className="w-full pl-9 pr-3 py-2 bg-[#121212] border border-[#333] rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2ecc71] transition-colors"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-            <div className="flex items-center gap-1 bg-[#18181c] border border-[#2e2e33] rounded-xl p-1.5 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto justify-end">
+            <div className="flex items-center justify-between sm:justify-start gap-1 bg-[#121212] border border-[#333] rounded-xl p-1 overflow-x-auto">
               <button
                 onClick={() => setFilterRating('all')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
                   filterRating === 'all' 
-                    ? 'bg-[#10b981] text-black font-extrabold' 
+                    ? 'bg-[#2ecc71] text-black' 
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                All
+                All Ratings
               </button>
               <button
                 onClick={() => setFilterRating('5')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
                   filterRating === '5' 
-                    ? 'bg-[#10b981] text-black font-extrabold' 
+                    ? 'bg-[#2ecc71] text-black' 
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                5★
+                5★ Only
               </button>
             </div>
 
@@ -287,181 +255,215 @@ export default function Dashreview() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full sm:w-auto appearance-none bg-[#18181c] border border-[#2e2e33] text-zinc-200 text-sm font-bold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-[#10b981] cursor-pointer shadow-sm"
+                className="w-full sm:w-auto appearance-none bg-[#121212] border border-[#333] hover:border-zinc-500 text-zinc-200 text-xs sm:text-sm font-bold rounded-xl px-4 py-2 pr-8 focus:outline-none transition cursor-pointer"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
                 <option value="highest">Highest Rating</option>
                 <option value="lowest">Lowest Rating</option>
               </select>
-              <FaChevronDown className="w-3 h-3 text-zinc-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <FaChevronDown className="w-3 h-3 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
         </div>
 
-        {/* Table Container */}
-        <div className="bg-[#202025] border border-[#2e2e33] rounded-2xl overflow-hidden shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead>
-                <tr className="border-b border-[#2e2e33] bg-[#1a1a1e] text-xs uppercase font-extrabold text-zinc-400 tracking-wider">
-                  <th className="py-4 px-6 w-1/4">User & Rating</th>
-                  <th className="py-4 px-6 w-2/4">Review Content</th>
-                  <th className="py-4 px-6">Game (ID)</th>
-                  <th className="py-4 px-6">Date</th>
-                  <th className="py-4 px-6 text-right">Actions</th>
-                </tr>
-              </thead>
+        {/* LOADING STATE */}
+        {isLoading ? (
+          <div className="py-20 flex justify-center">
+            <FaSpinner className="w-8 h-8 text-emerald-500 animate-spin" />
+          </div>
+        ) : reviews.length === 0 ? (
+          <div className="text-center py-16 bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] shadow-lg">
+            <FaMessage className="w-8 h-8 mx-auto mb-3 opacity-40 text-zinc-600" />
+            <p className="text-zinc-400 text-sm font-semibold">
+              No reviews found matching your criteria.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* MOBILE VIEW (CARDS) - Eliminates horizontal layout scrolling */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 xl:hidden">
+              {reviews.map((review) => {
+                const dateObj = new Date(review.created_at || Date.now());
 
-              <tbody className="divide-y divide-[#2e2e33] text-sm">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan="5" className="py-16 text-center text-zinc-500">
-                      <FaSpinner className="w-8 h-8 animate-spin mx-auto mb-3 text-[#10b981]" />
-                      Loading reviews...
-                    </td>
-                  </tr>
-                ) : filteredReviews.length > 0 ? (
-                  filteredReviews.map((review) => {
-                    const isEditing = editingId === review.id;
-                    const dateObj = new Date(review.created_at || Date.now());
-
-                    return (
-                      <tr 
-                        key={review.id} 
-                        className="hover:bg-[#25252b] transition-colors group"
+                return (
+                  <motion.div
+                    key={review.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] p-5 shadow-xl space-y-4 group hover:border-[#383838] transition-colors"
+                  >
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between gap-3 border-b border-[#262626] pb-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div 
+                          className="w-10 h-10 rounded-xl bg-[#121212] border border-[#333] flex items-center justify-center shrink-0 bg-cover bg-center"
+                          style={{ backgroundImage: review.user_avatar ? `url(${review.user_avatar})` : 'none' }}
+                        >
+                          {!review.user_avatar && (
+                            <span className="text-xs font-bold text-zinc-300">
+                              {review.user ? review.user.substring(0, 2).toUpperCase() : '??'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-extrabold text-white text-sm truncate">{review.user}</h3>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <FaStar
+                                key={i}
+                                className={`w-3 h-3 ${
+                                  i < review.rating ? 'text-emerald-400' : 'text-zinc-700'
+                                }`}
+                              />
+                            ))}
+                            <span className="text-[11px] text-zinc-400 font-bold ml-1">({review.rating})</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => confirmDelete(review.id)}
+                        className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                        title="Delete Review"
                       >
-                        <td className="py-4 px-6 align-top">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-[#2a2a30] flex items-center justify-center shrink-0 border border-[#38383f]">
-                              <span className="text-xs font-bold text-zinc-300">
-                                {review.user ? review.user.substring(0, 2).toUpperCase() : '??'}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-bold text-zinc-200 text-sm">
-                                {review.user}
-                              </p>
-                              
-                              {isEditing ? (
-                                <select 
-                                  value={editRating}
-                                  onChange={(e) => setEditRating(Number(e.target.value))}
-                                  className="mt-1.5 bg-[#18181c] border border-[#38383f] text-xs font-bold rounded-lg outline-none p-1.5 text-zinc-200"
-                                >
-                                  {[1,2,3,4,5].map(num => (
-                                    <option key={num} value={num}>{num} Stars</option>
-                                  ))}
-                                </select>
-                              ) : (
+                        <FaTrashCan className="text-xs" />
+                      </button>
+                    </div>
+
+                    {/* Content Row */}
+                    <p className="text-zinc-300 text-xs sm:text-sm font-medium leading-relaxed">
+                      {review.text}
+                    </p>
+
+                    {/* Footer Row */}
+                    <div className="flex items-center justify-between pt-2 border-t border-[#262626] text-[11px] text-zinc-400 font-semibold">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#121212] border border-[#333] text-zinc-300">
+                        <FaGamepad className="w-3 h-3 text-emerald-400" />
+                        {review.game_title || `Game #${review.game}`}
+                      </span>
+                      <span>{dateObj.toLocaleDateString()}</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* DESKTOP VIEW (TABLE) */}
+            <div className="hidden xl:block bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[850px]">
+                  <thead>
+                    <tr className="border-b border-[#2a2a2a] bg-[#121212] text-[11px] uppercase font-bold text-zinc-400 tracking-wider">
+                      <th className="py-4 px-5 w-1/4">User & Rating</th>
+                      <th className="py-4 px-5 w-2/4">Review Content</th>
+                      <th className="py-4 px-5">Game</th>
+                      <th className="py-4 px-5">Date</th>
+                      <th className="py-4 px-5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-[#2a2a2a] text-sm">
+                    {reviews.map((review) => {
+                      const dateObj = new Date(review.created_at || Date.now());
+
+                      return (
+                        <tr key={review.id} className="hover:bg-[#222222] transition-colors group">
+                          
+                          <td className="py-4 px-5 align-top">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-10 h-10 rounded-xl bg-[#121212] border border-[#333] bg-cover bg-center flex items-center justify-center shrink-0"
+                                style={{ backgroundImage: review.user_avatar ? `url(${review.user_avatar})` : 'none' }}
+                              >
+                                {!review.user_avatar && (
+                                  <span className="text-xs font-bold text-zinc-300">
+                                    {review.user ? review.user.substring(0, 2).toUpperCase() : '??'}
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-extrabold text-white text-sm">
+                                  {review.user}
+                                </p>
                                 <div className="flex items-center gap-1 mt-1">
                                   {[...Array(5)].map((_, i) => (
                                     <FaStar
                                       key={i}
                                       className={`w-3.5 h-3.5 ${
-                                        i < review.rating
-                                          ? 'text-[#10b981]'
-                                          : 'text-zinc-600'
+                                        i < review.rating ? 'text-emerald-400' : 'text-zinc-700'
                                       }`}
                                     />
                                   ))}
-                                  <span className="text-xs text-zinc-400 font-bold ml-1.5">
+                                  <span className="text-xs text-zinc-400 font-bold ml-1">
                                     ({review.rating})
                                   </span>
                                 </div>
-                              )}
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="py-4 px-6 align-top max-w-xs sm:max-w-md">
-                          {isEditing ? (
-                            <textarea
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              rows="3"
-                              className="w-full bg-[#18181c] border border-[#38383f] rounded-xl p-3 text-sm text-zinc-200 focus:border-[#10b981] outline-none resize-none transition-colors"
-                            />
-                          ) : (
+                          <td className="py-4 px-5 align-top max-w-xs sm:max-w-md">
                             <p className="text-zinc-300 text-sm font-medium leading-relaxed">
                               {review.text}
                             </p>
-                          )}
-                        </td>
+                          </td>
 
-                        <td className="py-4 px-6 align-top whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181c] border border-[#2e2e33] text-xs font-bold text-zinc-300">
-                            <FaGamepad className="w-3.5 h-3.5 text-[#10b981]" />
-                            Game #{review.game}
-                          </span>
-                        </td>
+                          <td className="py-4 px-5 align-top whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#121212] border border-[#333] text-xs font-bold text-zinc-300">
+                              <FaGamepad className="w-3.5 h-3.5 text-emerald-400" />
+                              {review.game_title || `Game #${review.game}`}
+                            </span>
+                          </td>
 
-                        <td className="py-4 px-6 align-top whitespace-nowrap text-xs text-zinc-400">
-                          <p className="font-bold text-zinc-300">{dateObj.toLocaleDateString()}</p>
-                          <p className="text-[10px] font-medium text-zinc-500 mt-1">{dateObj.toLocaleTimeString()}</p>
-                        </td>
+                          <td className="py-4 px-5 align-top whitespace-nowrap text-xs text-zinc-400">
+                            <p className="font-bold text-zinc-300">{dateObj.toLocaleDateString()}</p>
+                            <p className="text-[10px] font-medium text-zinc-500 mt-1">{dateObj.toLocaleTimeString()}</p>
+                          </td>
 
-                        <td className="py-4 px-6 align-top text-right whitespace-nowrap">
-                          {isEditing ? (
-                            <div className="flex flex-col gap-2 items-end">
-                              <button
-                                onClick={() => handleSaveEdit(review.id)}
-                                disabled={isSubmitting}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#10b981] hover:bg-emerald-400 text-black text-xs font-extrabold rounded-xl transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {isSubmitting ? <FaSpinner className="w-3.5 h-3.5 animate-spin"/> : <FaSave className="w-3.5 h-3.5" />}
-                                <span>Save</span>
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                disabled={isSubmitting}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#2a2a30] hover:bg-[#38383f] text-zinc-200 text-xs font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <FaTimes className="w-3.5 h-3.5" />
-                                <span>Cancel</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col gap-2 items-end opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => handleStartEdit(review)}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#2a2a30] hover:bg-[#38383f] text-zinc-200 text-xs font-bold rounded-xl transition-colors shadow-sm w-[90px] justify-center"
-                              >
-                                <FaEdit className="w-3.5 h-3.5" />
-                                <span>Edit</span>
-                              </button>
-                              <button
-                                onClick={() => confirmDelete(review.id)}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-500/10 hover:bg-red-500 border border-red-500/30 hover:border-red-500 text-red-500 hover:text-white text-xs font-extrabold rounded-xl transition-all duration-300 shadow-sm w-[90px] justify-center"
-                              >
-                                <FaTrashCan className="w-3.5 h-3.5" />
-                                <span>Delete</span>
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="py-16 text-center text-zinc-500">
-                      <FaMessage className="w-8 h-8 mx-auto mb-3 opacity-40 text-zinc-600" />
-                      <span className="font-medium">No reviews found matching your criteria.</span>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                          <td className="py-4 px-5 align-top text-right whitespace-nowrap">
+                            <button
+                              onClick={() => confirmDelete(review.id)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500 border border-rose-500/30 hover:border-rose-500 text-rose-400 hover:text-white text-xs font-extrabold rounded-xl transition-all shadow-sm cursor-pointer"
+                              title="Delete Review"
+                            >
+                              <FaTrashCan className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          </td>
 
-        {!isLoading && (
-          <div className="flex items-center justify-between text-xs text-zinc-400 pt-2 font-medium">
-            <p>
-              Showing <span className="font-bold text-zinc-200">{filteredReviews.length}</span> of{' '}
-              <span className="font-bold text-zinc-200">{reviews.length}</span> reviews
-            </p>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Pagination Controls */}
+        {!isLoading && totalCount > itemsPerPage && (
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 pt-2 pb-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={!hasPrev}
+              className="w-full sm:w-auto px-4 py-2 bg-[#1c1c1c] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:hover:bg-[#1c1c1c] text-zinc-300 text-xs font-extrabold rounded-xl border border-[#2a2a2a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
+            >
+              <FaChevronLeft className="text-[10px]" /> Previous
+            </button>
+            
+            <span className="text-xs text-zinc-400 font-semibold text-center whitespace-nowrap px-4">
+              Page <span className="text-white font-bold">{currentPage}</span> of {totalPages}
+            </span>
+
+            <button
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              disabled={!hasNext}
+              className="w-full sm:w-auto px-4 py-2 bg-[#1c1c1c] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:hover:bg-[#1c1c1c] text-zinc-300 text-xs font-extrabold rounded-xl border border-[#2a2a2a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
+            >
+              Next <FaChevronRight className="text-[10px]" />
+            </button>
           </div>
         )}
 
