@@ -24,17 +24,17 @@ const Home = () => {
                 
                 <form 
                     onSubmit={handleSearchSubmit}
-                    className="mt-8 flex items-center justify-between w-full max-w-md bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-6 py-3 shadow-lg"
+                    className="mt-8 flex items-center justify-between w-[90%] sm:w-full max-w-[320px] sm:max-w-md lg:max-w-lg bg-white/40 backdrop-blur-md border border-white/20 rounded-full px-4 py-2.5 sm:px-6 sm:py-3 shadow-lg transition-all focus-within:bg-white/50 focus-within:shadow-xl hover:bg-white/50"
                 >
                     <input 
                         type="text" 
-                        placeholder="Search" 
+                        placeholder="Search games..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-transparent text-gray-800 placeholder-gray-600 outline-none w-full text-lg font-light"
+                        className="bg-transparent text-gray-900 placeholder-gray-700 outline-none w-full text-base sm:text-lg font-medium pr-3"
                     />
-                    <button type="submit" aria-label="Search">
-                        <svg className="w-7 h-7 text-black cursor-pointer" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <button type="submit" aria-label="Search" className="shrink-0 transition-transform hover:scale-110 active:scale-95">
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-black cursor-pointer" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </button>

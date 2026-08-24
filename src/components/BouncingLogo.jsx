@@ -95,7 +95,7 @@ const BouncingLogo = () => {
         ref={logoRef}
         src={logoImg}
         alt="Bouncing Logo"
-        className="absolute top-0 left-0 w-3 md:w-4 lg:w-5 opacity-80 h-auto" 
+        className="absolute top-0 left-0 w-3 md:w-5 lg:w-10 opacity-80 h-auto" 
         style={{ willChange: 'transform, filter' }}
       />
     </div>

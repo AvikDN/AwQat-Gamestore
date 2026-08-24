@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { FaUser, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import logoImg from '../assets/Awqat_full.png'; 
@@ -16,12 +16,32 @@ export default function NavBar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   
+  // State to track if the left/right sides should be hidden
+  const [hiddenSides, setHiddenSides] = useState(false);
+  const { scrollY } = useScroll();
+  
   const profileRef = useRef(null);
   const cartRef = useRef(null);
   
   const { user, logoutUser } = useAuthContext();
   const { totalItems } = useCartContext();
   const navigate = useNavigate();
+
+  // Handle Smart Scroll behavior
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious();
+    // If scrolling down AND past 100px threshold, hide the sides
+    if (latest > previous && latest > 100) {
+      setHiddenSides(true);
+      // Automatically close menus if they are open while scrolling down
+      setIsProfileOpen(false);
+      setIsCartOpen(false);
+      setIsMenuOpen(false);
+    } else {
+      // If scrolling up, show the sides
+      setHiddenSides(false);
+    }
+  });
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -105,6 +125,12 @@ export default function NavBar() {
     exit: { opacity: 0, y: -10 },
   };
 
+  // Animation variants for the smart-scrolling sides
+  const sideNavVariants = {
+    visible: { y: 0, opacity: 1, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } },
+    hidden: { y: -100, opacity: 0, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } }
+  };
+
   const isCustomer = user && user.groups && user.groups.includes("Customer");
 
   return (
@@ -112,7 +138,7 @@ export default function NavBar() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 100, damping: 20 }}
-      className="flex flex-wrap items-center justify-between w-full px-3 sm:px-4 md:px-8 py-3 md:py-4 bg-transparent fixed top-0 left-0 z-50"
+      className="flex flex-wrap items-center justify-between w-full px-3 sm:px-4 md:px-8 py-3 md:py-4 bg-transparent fixed top-0 left-0 z-50 pointer-events-none"
     >
       <Toaster 
         position="top-center"
@@ -132,23 +158,29 @@ export default function NavBar() {
         }}
       />
       
-      {/* Logo */}
-      <NavLink to="/" className="z-20 flex items-center">
-        <motion.img 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          src={logoImg} 
-          alt="AwQat Logo" 
-          className="h-7 sm:h-8 md:h-12 w-auto object-contain hover:opacity-80 transition-opacity" 
-        />
-      </NavLink>
+      {/* Left Section: Logo */}
+      <motion.div 
+        variants={sideNavVariants}
+        animate={hiddenSides ? "hidden" : "visible"}
+        className="z-20 flex items-center pointer-events-auto"
+      >
+        <NavLink to="/">
+          <motion.img 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            src={logoImg} 
+            alt="AwQat Logo" 
+            className="h-7 sm:h-8 md:h-12 w-auto object-contain hover:opacity-80 transition-opacity" 
+          />
+        </NavLink>
+      </motion.div>
       
-      {/* Glass UI Center Links (Desktop Only - lg and up) */}
+      {/* Center Section: Glass UI Links (Desktop Only - lg and up) */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="hidden lg:flex absolute left-1/2 -translate-x-1/2 z-20"
+        className="hidden lg:flex absolute left-1/2 -translate-x-1/2 z-20 pointer-events-auto"
       >
         <GlassSurface
           width="max-content"
@@ -225,8 +257,12 @@ export default function NavBar() {
         </GlassSurface>
       </motion.div>
 
-      {/* Right Section */}
-      <div className="flex items-center gap-1 sm:gap-2 md:gap-4 z-20">
+      {/* Right Section: Profile, Cart, Mobile Menu */}
+      <motion.div 
+        variants={sideNavVariants}
+        animate={hiddenSides ? "hidden" : "visible"}
+        className="flex items-center gap-1 sm:gap-2 md:gap-4 z-20 pointer-events-auto"
+      >
         
        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
           
@@ -326,44 +362,44 @@ export default function NavBar() {
           )}
         </div>
 
-{/* Standard Cart Icon Toggle */}
-<div className="relative flex items-center justify-center" ref={cartRef}>
-  <motion.button 
-    onClick={() => setIsCartOpen(!isCartOpen)}
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    className="relative flex items-center justify-center cursor-pointer transition-colors"
-    aria-label="Cart"
-  >
-    {/* Standalone Green Cart Icon (No Glow) */}
-    <svg 
-      className="w-6 h-6 md:w-7 md:h-7 text-[#2ecc71] transition-colors" 
-      fill="none" 
-      stroke="currentColor" 
-      viewBox="0 0 24 24"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
+        {/* Standard Cart Icon Toggle */}
+        <div className="relative flex items-center justify-center" ref={cartRef}>
+          <motion.button 
+            onClick={() => setIsCartOpen(!isCartOpen)}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="relative flex items-center justify-center cursor-pointer transition-colors"
+            aria-label="Cart"
+          >
+            {/* Standalone Green Cart Icon (No Glow) */}
+            <svg 
+              className="w-6 h-6 md:w-7 md:h-7 text-[#2ecc71] transition-colors" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
 
-    {/* Dynamic Cart Badge */}
-    <AnimatePresence>
-      {totalItems > 0 && (
-        <motion.span 
-          initial={{ scale: 0, opacity: 0 }} 
-          animate={{ scale: 1, opacity: 1 }} 
-          exit={{ scale: 0, opacity: 0 }} 
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          className="absolute -top-1.5 -right-2 bg-white text-black text-[10px] md:text-[11px] font-black px-1.5 py-0.5 rounded-full shadow-sm flex items-center justify-center min-w-[18px] min-h-[18px] border border-gray-200"
-        >
-          {totalItems}
-        </motion.span>
-      )}
-    </AnimatePresence>
-  </motion.button>
+            {/* Dynamic Cart Badge */}
+            <AnimatePresence>
+              {totalItems > 0 && (
+                <motion.span 
+                  initial={{ scale: 0, opacity: 0 }} 
+                  animate={{ scale: 1, opacity: 1 }} 
+                  exit={{ scale: 0, opacity: 0 }} 
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="absolute -top-1.5 -right-2 bg-white text-black text-[10px] md:text-[11px] font-black px-1.5 py-0.5 rounded-full shadow-sm flex items-center justify-center min-w-[18px] min-h-[18px] border border-gray-200"
+                >
+                  {totalItems}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.button>
 
-  {/* Cart Dropdown Flyout Window */}
-  <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-</div>
+          {/* Cart Dropdown Flyout Window */}
+          <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+        </div>
         
         {/* Tablet & Mobile Menu Hamburger Button (Visible below lg) */}
         <motion.button 
@@ -381,7 +417,7 @@ export default function NavBar() {
           </svg>
         </motion.button>
 
-      </div>
+      </motion.div>
 
       {/* Tablet & Mobile Menu Dropdown (Visible below lg) */}
       <AnimatePresence>
@@ -391,7 +427,7 @@ export default function NavBar() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="lg:hidden flex flex-col items-center gap-4 w-full mt-4 py-6 rounded-2xl bg-black/90 backdrop-blur-xl border border-[#333] shadow-2xl z-50 overflow-hidden"
+            className="lg:hidden flex flex-col items-center gap-4 w-full mt-4 py-6 rounded-2xl bg-black/90 backdrop-blur-xl border border-[#333] shadow-2xl z-50 overflow-hidden pointer-events-auto"
           >
             <motion.div variants={linkVariants}>
               <NavLink 

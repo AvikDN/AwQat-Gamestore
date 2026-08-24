@@ -34,6 +34,9 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [activeMedia, setActiveMedia] = useState({ type: 'image', url: '' });
 
+  // Mobile Tabs State
+  const [activeTab, setActiveTab] = useState('purchase'); // 'purchase', 'sysreq', 'reviews'
+
   // Current User State & Purchase Verification
   const [currentUser, setCurrentUser] = useState(null);
   const [hasPurchased, setHasPurchased] = useState(false);
@@ -93,14 +96,12 @@ export default function ProductDetails() {
       const orders = currentUser.profile?.order_history || currentUser.order_history;
       
       if (orders) {
-        // Check profile's order history array
         const purchased = orders.some(o => 
           (o.status || o.order_status)?.toLowerCase() !== 'cancelled' &&
           (o.items || o.games || []).some(i => String(i.game || i.game_id) === String(id))
         );
         setHasPurchased(purchased);
       } else {
-        // Fallback: Fetch user's orders directly to verify purchase
         AuthApiClient.get('/api/orders/')
           .then(res => {
             const allOrders = res.data.results || res.data || [];
@@ -133,7 +134,7 @@ export default function ProductDetails() {
 
     try {
       const response = await AuthApiClient.post(`/api/games/${id}/reviews/`, {
-        game: id, // Add this line to satisfy the serializer's required field
+        game: id,
         text: reviewText.trim(),
         rating: reviewRating
       });
@@ -144,7 +145,6 @@ export default function ProductDetails() {
       toast.success("Review posted successfully!", { id: toastId });
     } catch (error) {
       console.error("Review posting error:", error);
-
       toast.error(
         error.response?.data?.detail || 
         error.response?.data?.non_field_errors?.[0] || 
@@ -178,7 +178,7 @@ export default function ProductDetails() {
   const cancelEditing = () => {
     setEditingReviewId(null);
     setEditReviewText('');
-    setEditReviewRating(4); // Reset to default 4
+    setEditReviewRating(4);
   };
 
   const handleUpdateReview = async () => {
@@ -247,7 +247,6 @@ export default function ProductDetails() {
   const discountValue = Number(product.discount || 0);
   const hasDiscount = discountValue > 0;
   
-  // Calculate the percentage to display on the tag
   const discountPercentage = hasDiscount 
     ? (discountValue <= 100 ? discountValue : Math.round((discountValue / originalPrice) * 100))
     : 0;
@@ -259,8 +258,282 @@ export default function ProductDetails() {
   const totalOriginalPrice = originalPrice * quantity;
   const totalPrice = unitFinalPrice * quantity;
 
-  // Check if the current user has already left a review
   const hasReviewed = currentUser && reviews.some(r => r.user === currentUser.username);
+
+  // --- Render Sections ---
+
+  const renderPurchasePanel = () => (
+    <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-2xl relative overflow-hidden">
+      <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#2ecc71]/5 rounded-full blur-3xl pointer-events-none"></div>
+      <span className="text-xl font-bold mb-1 text-gray-400 relative z-10">Purchase Panel</span>
+      
+      {isComingSoon ? (
+        <div className="flex items-baseline gap-3 mb-6 relative z-10">
+          <span className="text-3xl md:text-4xl font-black tracking-tight text-cyan-400">
+            Available soon
+          </span>
+        </div>
+      ) : (
+        <div className="flex items-baseline gap-2 mb-6 relative z-10">
+          <span className="text-sm font-bold text-white">Price:</span>
+          {hasDiscount ? (
+            <>
+              <span className="text-sm font-bold text-gray-400 line-through">
+                {totalOriginalPrice} ৳
+              </span>
+              <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71] ml-2">
+                {totalPrice.toFixed(0)} ৳
+              </span>
+            </>
+          ) : (
+            <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71] ml-2">
+              {totalOriginalPrice} ৳
+            </span>
+          )}
+        </div>
+      )}
+      
+      <span className="text-sm font-bold mb-2 text-gray-400 relative z-10">Supported Platforms</span>
+      <div className="flex mb-6 relative z-10">
+        <span className="bg-[#2ecc71]/10 border border-[#2ecc71]/30 text-[#2ecc71] py-2 px-4 rounded-md font-bold tracking-wider">
+          {product.platforms}
+        </span>
+      </div>
+
+      {!isComingSoon && (
+        <>
+          <div className="flex items-center gap-1.5 mb-6 relative z-10">
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={decreaseQuantity} 
+              className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center cursor-pointer"
+            >
+              -
+            </motion.button>
+            <div className="w-12 h-8 bg-black border border-[#333] text-white font-bold flex items-center justify-center rounded-md">
+              {quantity}
+            </div>
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={increaseQuantity} 
+              className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center cursor-pointer"
+            >
+              +
+            </motion.button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 relative z-10">
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => addToCart(product, quantity)}
+              className="flex-1 bg-[#333] hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-white font-bold text-center border border-transparent cursor-pointer"
+            >
+              Add to cart
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => addToCart(product, quantity)}
+              className="flex-1 bg-[#2ecc71] hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-black font-extrabold text-center border border-transparent cursor-pointer"
+            >
+              Buy Now
+            </motion.button>
+          </div>
+        </>
+      )}
+    </motion.div>
+  );
+
+  const renderSysReqPanel = () => (
+    <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-xl">
+      <h3 className="text-xl font-bold mb-5 text-[#2ecc71]">System requirement</h3>
+      <ul className="flex flex-col gap-3 text-sm md:text-base font-medium text-gray-400">
+        {product.system_requirements ? (
+          Object.entries(product.system_requirements).map(([key, value]) => (
+            <li key={key}>
+              <strong className="text-white uppercase">{key}:</strong> {value}
+            </li>
+          ))
+        ) : (
+          <li>No system requirements specified.</li>
+        )}
+      </ul>
+    </motion.div>
+  );
+
+  const renderReviewsPanel = () => (
+    <motion.div variants={itemVariants} className="w-full space-y-8">
+      <h2 className="text-2xl md:text-3xl font-bold text-[#2ecc71] hidden lg:block">Customer Reviews</h2>
+      
+      {/* Write a Review Form - ONLY visible if they purchased the game */}
+      {currentUser && hasPurchased && !hasReviewed && (
+        <div className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#2ecc71]/5 blur-3xl pointer-events-none rounded-full"></div>
+          <h3 className="text-lg font-bold text-white mb-4 relative z-10">Write a Review</h3>
+          <form onSubmit={handleSubmitReview} className="relative z-10">
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Rating</label>
+              <div className="flex gap-1.5">
+                {[1, 2, 3, 4, 5].map(num => (
+                  <FaStar
+                    key={num}
+                    onClick={() => setReviewRating(num)}
+                    className={`w-6 h-6 cursor-pointer transition-colors ${num <= reviewRating ? 'text-[#2ecc71] drop-shadow-[0_0_5px_rgba(46,204,113,0.5)]' : 'text-[#333] hover:text-[#555]'}`}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="mb-4">
+              <textarea
+                rows="3"
+                placeholder="What did you think about this game?"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                className="w-full bg-[#121212] border border-[#333] focus:border-[#2ecc71] rounded-xl p-4 text-sm text-white outline-none resize-none transition-colors shadow-inner"
+              ></textarea>
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmittingReview}
+              className="bg-[#2ecc71] hover:bg-[#27ae60] text-black font-extrabold px-6 py-2.5 rounded-xl transition-all shadow-[0_0_10px_rgba(46,204,113,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmittingReview ? <FaSpinner className="animate-spin" /> : <FaPenToSquare />}
+              Post Review
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Reviews List */}
+      <div className="flex flex-col gap-4">
+        {reviews.length > 0 ? (
+          reviews.map((review) => {
+            const isEditing = editingReviewId === review.id;
+            const isOwner = currentUser && currentUser.username === review.user;
+            const dateObj = new Date(review.created_at || Date.now());
+
+            return (
+              <div 
+                key={review.id} 
+                className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-5 sm:p-6 flex flex-col gap-4 w-full group relative overflow-hidden transition-colors hover:border-[#2ecc71]/30"
+              >
+                <div className="flex items-start justify-between gap-4 relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div 
+                      className="w-11 h-11 bg-[#121212] border border-[#333] rounded-full flex items-center justify-center shrink-0 bg-cover bg-center shadow-inner"
+                      style={{ backgroundImage: review.user_avatar ? `url(${review.user_avatar})` : 'none' }}
+                    >
+                      {!review.user_avatar && (
+                        <span className="text-[#2ecc71] font-black text-lg uppercase">
+                          {review.user ? review.user.charAt(0) : 'U'}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-col">
+                      <span className="text-white font-bold sm:text-lg tracking-tight">
+                        {review.user}
+                      </span>
+                      
+                      {isEditing ? (
+                        <div className="flex gap-1 mt-1">
+                          {[1, 2, 3, 4, 5].map(num => (
+                            <FaStar
+                              key={num}
+                              onClick={() => setEditReviewRating(num)}
+                              className={`w-4 h-4 cursor-pointer transition-colors ${num <= editReviewRating ? 'text-[#2ecc71]' : 'text-[#333]'}`}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 mt-1">
+                          {[...Array(5)].map((_, i) => (
+                            <FaStar 
+                              key={i}
+                              className={`w-3.5 h-3.5 ${i < review.rating ? 'text-[#2ecc71]' : 'text-[#333]'}`} 
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {isOwner && !isEditing && (
+                    <div className="flex items-center gap-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => startEditing(review)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#222] hover:bg-[#333] text-gray-300 transition-colors"
+                        title="Edit Review"
+                      >
+                        <FaPenToSquare className="text-xs" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteReview(review.id)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white transition-colors border border-rose-500/20 hover:border-transparent"
+                        title="Delete Review"
+                      >
+                        <FaTrashCan className="text-xs" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="relative z-10 pl-[60px]">
+                  {isEditing ? (
+                    <div className="flex flex-col gap-3">
+                      <textarea
+                        rows="3"
+                        value={editReviewText}
+                        onChange={(e) => setEditReviewText(e.target.value)}
+                        className="w-full bg-[#121212] border border-[#333] focus:border-[#2ecc71] rounded-xl p-3 text-sm text-white outline-none resize-none transition-colors"
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={cancelEditing}
+                          disabled={isUpdatingReview}
+                          className="px-4 py-1.5 bg-[#222] hover:bg-[#333] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          <FaTimes /> Cancel
+                        </button>
+                        <button
+                          onClick={handleUpdateReview}
+                          disabled={isUpdatingReview}
+                          className="px-4 py-1.5 bg-[#2ecc71] hover:bg-[#27ae60] text-black text-xs font-extrabold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {isUpdatingReview ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-gray-300 text-sm md:text-base leading-relaxed">
+                        {review.text}
+                      </p>
+                      <p className="text-[11px] text-gray-500 font-medium mt-3">
+                        {dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-10 text-center flex flex-col items-center justify-center">
+            <div className="w-16 h-16 bg-[#222] rounded-full flex items-center justify-center mb-4 text-[#333]">
+              <FaStar className="w-8 h-8" />
+            </div>
+            <span className="text-gray-400 font-medium">No reviews available for this product yet.</span>
+            <span className="text-gray-500 text-sm mt-1">Check back later for community thoughts!</span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
 
   return (
     <div className="bg-transparent min-h-screen w-full text-white selection:bg-[#2ecc71] selection:text-black">
@@ -282,13 +555,12 @@ export default function ProductDetails() {
           className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12"
         >
           
-          {/* Left Column */}
+          {/* Left Column (Desktop) / Top Section (Mobile) */}
           <div className="lg:col-span-7 flex flex-col">
             <motion.h1 variants={itemVariants} className="text-3xl md:text-5xl font-bold mb-5 md:mb-7 tracking-tight">
               {product.title}
             </motion.h1>
             
-            {/* Main Media Block */}
             <motion.div variants={itemVariants} className="w-full aspect-video bg-[#1a1a1a] rounded-xl overflow-hidden flex items-center justify-center shadow-xl border border-transparent hover:border-[#2ecc71]/30 transition-colors relative">
               {hasDiscount && !isComingSoon && (
                 <div className="absolute top-4 right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-sm sm:text-base px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(46,204,113,0.6)]">
@@ -332,7 +604,6 @@ export default function ProductDetails() {
               </AnimatePresence>
             </motion.div>
 
-            {/* Thumbnails */}
             <motion.div variants={itemVariants} className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-4 mt-2 sm:mt-4">
               {product.video && (
                 <motion.div 
@@ -371,7 +642,6 @@ export default function ProductDetails() {
               ))}
             </motion.div>
 
-            {/* Description Section */}
             <motion.div variants={itemVariants} className="mt-10 md:mt-12 flex flex-col gap-4">
               <h2 className="text-2xl md:text-3xl font-bold text-[#2ecc71]">Description</h2>
               
@@ -389,286 +659,60 @@ export default function ProductDetails() {
               </div>
             </motion.div>
 
-            {/* Dynamic Reviews Section */}
-            <motion.div variants={itemVariants} className="mt-10 md:mt-16 w-full space-y-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-[#2ecc71]">Customer Reviews</h2>
-              
-              {/* Write a Review Form - ONLY visible if they purchased the game */}
-              {currentUser && hasPurchased && !hasReviewed && (
-                <div className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 shadow-xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#2ecc71]/5 blur-3xl pointer-events-none rounded-full"></div>
-                  <h3 className="text-lg font-bold text-white mb-4 relative z-10">Write a Review</h3>
-                  <form onSubmit={handleSubmitReview} className="relative z-10">
-                    <div className="mb-4">
-                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Rating</label>
-                      <div className="flex gap-1.5">
-                        {[1, 2, 3, 4, 5].map(num => (
-                          <FaStar
-                            key={num}
-                            onClick={() => setReviewRating(num)}
-                            className={`w-6 h-6 cursor-pointer transition-colors ${num <= reviewRating ? 'text-[#2ecc71] drop-shadow-[0_0_5px_rgba(46,204,113,0.5)]' : 'text-[#333] hover:text-[#555]'}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <textarea
-                        rows="3"
-                        placeholder="What did you think about this game?"
-                        value={reviewText}
-                        onChange={(e) => setReviewText(e.target.value)}
-                        className="w-full bg-[#121212] border border-[#333] focus:border-[#2ecc71] rounded-xl p-4 text-sm text-white outline-none resize-none transition-colors shadow-inner"
-                      ></textarea>
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={isSubmittingReview}
-                      className="bg-[#2ecc71] hover:bg-[#27ae60] text-black font-extrabold px-6 py-2.5 rounded-xl transition-all shadow-[0_0_10px_rgba(46,204,113,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {isSubmittingReview ? <FaSpinner className="animate-spin" /> : <FaPenToSquare />}
-                      Post Review
-                    </button>
-                  </form>
-                </div>
-              )}
-
-              {/* Reviews List */}
-              <div className="flex flex-col gap-4">
-                {reviews.length > 0 ? (
-                  reviews.map((review) => {
-                    const isEditing = editingReviewId === review.id;
-                    const isOwner = currentUser && currentUser.username === review.user;
-                    const dateObj = new Date(review.created_at || Date.now());
-
-                    return (
-                      <div 
-                        key={review.id} 
-                        className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-5 sm:p-6 flex flex-col gap-4 w-full group relative overflow-hidden transition-colors hover:border-[#2ecc71]/30"
-                      >
-                        <div className="flex items-start justify-between gap-4 relative z-10">
-                          <div className="flex items-center gap-4">
-                            <div 
-                              className="w-11 h-11 bg-[#121212] border border-[#333] rounded-full flex items-center justify-center shrink-0 bg-cover bg-center shadow-inner"
-                              style={{ backgroundImage: review.user_avatar ? `url(${review.user_avatar})` : 'none' }}
-                            >
-                              {!review.user_avatar && (
-                                <span className="text-[#2ecc71] font-black text-lg uppercase">
-                                  {review.user ? review.user.charAt(0) : 'U'}
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="flex flex-col">
-                              <span className="text-white font-bold sm:text-lg tracking-tight">
-                                {review.user}
-                              </span>
-                              
-                              {isEditing ? (
-                                <div className="flex gap-1 mt-1">
-                                  {[1, 2, 3, 4, 5].map(num => (
-                                    <FaStar
-                                      key={num}
-                                      onClick={() => setEditReviewRating(num)}
-                                      className={`w-4 h-4 cursor-pointer transition-colors ${num <= editReviewRating ? 'text-[#2ecc71]' : 'text-[#333]'}`}
-                                    />
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-1 mt-1">
-                                  {[...Array(5)].map((_, i) => (
-                                    <FaStar 
-                                      key={i}
-                                      className={`w-3.5 h-3.5 ${i < review.rating ? 'text-[#2ecc71]' : 'text-[#333]'}`} 
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Action Buttons for Owner */}
-                          {isOwner && !isEditing && (
-                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
-                                onClick={() => startEditing(review)}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#222] hover:bg-[#333] text-gray-300 transition-colors"
-                                title="Edit Review"
-                              >
-                                <FaPenToSquare className="text-xs" />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteReview(review.id)}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white transition-colors border border-rose-500/20 hover:border-transparent"
-                                title="Delete Review"
-                              >
-                                <FaTrashCan className="text-xs" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Review Content */}
-                        <div className="relative z-10 pl-[60px]">
-                          {isEditing ? (
-                            <div className="flex flex-col gap-3">
-                              <textarea
-                                rows="3"
-                                value={editReviewText}
-                                onChange={(e) => setEditReviewText(e.target.value)}
-                                className="w-full bg-[#121212] border border-[#333] focus:border-[#2ecc71] rounded-xl p-3 text-sm text-white outline-none resize-none transition-colors"
-                              />
-                              <div className="flex gap-2 justify-end">
-                                <button
-                                  onClick={cancelEditing}
-                                  disabled={isUpdatingReview}
-                                  className="px-4 py-1.5 bg-[#222] hover:bg-[#333] text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                >
-                                  <FaTimes /> Cancel
-                                </button>
-                                <button
-                                  onClick={handleUpdateReview}
-                                  disabled={isUpdatingReview}
-                                  className="px-4 py-1.5 bg-[#2ecc71] hover:bg-[#27ae60] text-black text-xs font-extrabold rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
-                                >
-                                  {isUpdatingReview ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                                  Save
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <p className="text-gray-300 text-sm md:text-base leading-relaxed">
-                                {review.text}
-                              </p>
-                              <p className="text-[11px] text-gray-500 font-medium mt-3">
-                                {dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-                              </p>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-10 text-center flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-[#222] rounded-full flex items-center justify-center mb-4 text-[#333]">
-                      <FaStar className="w-8 h-8" />
-                    </div>
-                    <span className="text-gray-400 font-medium">No reviews available for this product yet.</span>
-                    <span className="text-gray-500 text-sm mt-1">Check back later for community thoughts!</span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
+            {/* Desktop Reviews Section */}
+            <div className="hidden lg:block mt-16">
+              {renderReviewsPanel()}
+            </div>
             
           </div>
 
-          {/* Right Column (Purchase Panel) */}
-          <div className="lg:col-span-5 flex flex-col gap-6 lg:mt-17">
-            <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-2xl relative overflow-hidden">
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#2ecc71]/5 rounded-full blur-3xl pointer-events-none"></div>
+          {/* Right Column (Desktop Only) */}
+          <div className="lg:col-span-5 hidden lg:flex flex-col gap-6 lg:mt-17">
+            {renderPurchasePanel()}
+            {renderSysReqPanel()}
+          </div>
 
-              <span className="text-xl font-bold mb-1 text-gray-400 relative z-10">Purchase Panel</span>
-              
-              {isComingSoon ? (
-                <div className="flex items-baseline gap-3 mb-6 relative z-10">
-                  <span className="text-3xl md:text-4xl font-black tracking-tight text-cyan-400">
-                    Available soon
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-baseline gap-2 mb-6 relative z-10">
-                  <span className="text-sm font-bold text-white">Price:</span>
-                  {hasDiscount ? (
-                    <>
-                      <span className="text-sm font-bold text-gray-400 line-through">
-                        {totalOriginalPrice} ৳
-                      </span>
-                      <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71] ml-2">
-                        {totalPrice.toFixed(0)} ৳
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71] ml-2">
-                      {totalOriginalPrice} ৳
-                    </span>
-                  )}
-                </div>
-              )}
-              
-              <span className="text-sm font-bold mb-2 text-gray-400 relative z-10">Supported Platforms</span>
-              <div className="flex mb-6 relative z-10">
-                <span className="bg-[#2ecc71]/10 border border-[#2ecc71]/30 text-[#2ecc71] py-2 px-4 rounded-md font-bold tracking-wider">
-                  {product.platforms}
-                </span>
-              </div>
+          {/* Mobile Tabs Section (Mobile Only) */}
+          <div className="lg:hidden col-span-1 flex flex-col mt-8">
+            <div className="flex bg-[#1a1a1a] rounded-2xl p-1.5 mb-6 border border-[#333] shadow-lg sticky top-24 z-30 backdrop-blur-md bg-opacity-90">
+              <button 
+                onClick={() => setActiveTab('purchase')} 
+                className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-colors ${activeTab === 'purchase' ? 'bg-[#2ecc71] text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
+              >
+                Purchase
+              </button>
+              <button 
+                onClick={() => setActiveTab('sysreq')} 
+                className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-colors ${activeTab === 'sysreq' ? 'bg-[#2ecc71] text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
+              >
+                .sys
+              </button>
+              <button 
+                onClick={() => setActiveTab('reviews')} 
+                className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-colors ${activeTab === 'reviews' ? 'bg-[#2ecc71] text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
+              >
+                Reviews
+              </button>
+            </div>
 
-              {/* Hide Action Buttons if product is upcoming */}
-              {!isComingSoon && (
-                <>
-                  <div className="flex items-center gap-1.5 mb-6 relative z-10">
-                    <motion.button 
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={decreaseQuantity} 
-                      className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center cursor-pointer"
-                    >
-                      -
-                    </motion.button>
-                    <div className="w-12 h-8 bg-black border border-[#333] text-white font-bold flex items-center justify-center rounded-md">
-                      {quantity}
-                    </div>
-                    <motion.button 
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={increaseQuantity} 
-                      className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center cursor-pointer"
-                    >
-                      +
-                    </motion.button>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 relative z-10">
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => addToCart(product, quantity)}
-                    className="flex-1 bg-[#333] hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-white font-bold text-center border border-transparent cursor-pointer"
-                  >
-                    Add to cart
-                  </motion.button>
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      addToCart(product, quantity);
-                    }}
-                    className="flex-1 bg-[#2ecc71] hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-black font-extrabold text-center border border-transparent cursor-pointer"
-                  >
-                    Buy Now
-                  </motion.button>
-                </div>
-                </>
-              )}
-            </motion.div>
-
-            {/* Dynamic System Requirements */}
-            <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-xl">
-              <h3 className="text-xl font-bold mb-5 text-[#2ecc71]">System requirement</h3>
-              
-              <ul className="flex flex-col gap-3 text-sm md:text-base font-medium text-gray-400">
-                {product.system_requirements ? (
-                  Object.entries(product.system_requirements).map(([key, value]) => (
-                    <li key={key}>
-                      <strong className="text-white uppercase">{key}:</strong> {value}
-                    </li>
-                  ))
-                ) : (
-                  <li>No system requirements specified.</li>
-                )}
-              </ul>
-            </motion.div>
-            
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={{
+                  hidden: { opacity: 0, y: 10 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+                  exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
+                }}
+                className="flex flex-col gap-6"
+              >
+                {activeTab === 'purchase' && renderPurchasePanel()}
+                {activeTab === 'sysreq' && renderSysReqPanel()}
+                {activeTab === 'reviews' && renderReviewsPanel()}
+              </motion.div>
+            </AnimatePresence>
           </div>
           
         </motion.div>

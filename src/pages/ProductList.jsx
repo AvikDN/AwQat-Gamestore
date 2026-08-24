@@ -41,6 +41,7 @@ export default function ProductList() {
   useEffect(() => {
     setSearchTerm(urlSearchQuery);
     setDebouncedSearch(urlSearchQuery);
+    setPage(1); // Reset page on new external search
   }, [urlSearchQuery]);
 
   // Fetch ALL Studios and Categories (Handling Pagination)
@@ -92,17 +93,16 @@ export default function ProductList() {
   // Debounce search and price terms to prevent rapid API calls
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      setDebouncedMinPrice(minPrice);
-      setDebouncedMaxPrice(maxPrice);
+      // Only trigger if values actually changed to prevent unnecessary renders
+      if (debouncedSearch !== searchTerm || debouncedMinPrice !== minPrice || debouncedMaxPrice !== maxPrice) {
+        setDebouncedSearch(searchTerm);
+        setDebouncedMinPrice(minPrice);
+        setDebouncedMaxPrice(maxPrice);
+        setPage(1); // Automatically reset page when typing/sliding stops
+      }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchTerm, minPrice, maxPrice]);
-
-  // Reset page to 1 when ANY filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [sortOrder, selectedAvailability, debouncedSearch, debouncedMinPrice, debouncedMaxPrice, selectedStudio, selectedCategory]);
+  }, [searchTerm, minPrice, maxPrice, debouncedSearch, debouncedMinPrice, debouncedMaxPrice]);
 
   // Fetch Games based on current page and backend filters
   useEffect(() => {
@@ -123,6 +123,7 @@ export default function ProductList() {
     if (sortOrder === 'high-to-low') queryParams.append('ordering', '-final_price');
 
     // Sidebar Filters
+    queryParams.append('min_price', debouncedMinPrice); // ADDED MIN PRICE
     queryParams.append('max_price', debouncedMaxPrice);
     
     if (selectedStudio !== 'All') queryParams.append('studio', selectedStudio);
@@ -248,7 +249,10 @@ export default function ProductList() {
             <div className="relative">
               <select 
                 value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
+                onChange={(e) => {
+                  setSortOrder(e.target.value);
+                  setPage(1); // Set page immediately on sort change
+                }}
                 className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base border border-[#404040]"
               >
                 <option value="default">Default</option>
@@ -321,7 +325,10 @@ export default function ProductList() {
               <div className="relative">
                 <select 
                   value={selectedStudio}
-                  onChange={(e) => setSelectedStudio(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedStudio(e.target.value);
+                    setPage(1); // Set page immediately
+                  }}
                   className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
                 >
                   <option value="All">Studio</option>
@@ -338,7 +345,10 @@ export default function ProductList() {
               <div className="relative">
                 <select 
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setPage(1); // Set page immediately
+                  }}
                   className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
                 >
                   <option value="All">Category</option>
@@ -355,7 +365,10 @@ export default function ProductList() {
               <div className="relative">
                 <select 
                   value={selectedAvailability}
-                  onChange={(e) => setSelectedAvailability(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedAvailability(e.target.value);
+                    setPage(1); // Set page immediately
+                  }}
                   className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
                 >
                   <option value="All">Availability</option>

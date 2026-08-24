@@ -9,14 +9,12 @@ const MainLayout = () => {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-black">
       
-      {/* Mobile Static Background Image (Visible only on small screens) */}
       <img
         src={bgImg}
         alt="Background"
         className="fixed inset-0 w-full h-full object-cover object-center z-0 md:hidden block"
       />
 
-      {/* Desktop Background Video (Hidden on mobile to prevent lag/battery drain) */}
       <video
         autoPlay
         loop
@@ -28,8 +26,9 @@ const MainLayout = () => {
         <source src={bgVideo} type="video/webm" />
       </video>
 
-      {/* Bouncing Logo Overlay */}
-      <BouncingLogo />
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <BouncingLogo />
+      </div>
 
       {/* Content Wrapper */}
       <div className="relative z-10 flex flex-col min-h-screen">
