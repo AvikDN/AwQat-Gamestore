@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { FaFacebook, FaInstagram, FaDiscord, FaEnvelope } from 'react-icons/fa6';
 import logofullImg from '../assets/Awqat_full.png'; 
 import authApiClient from '../services/auth-api-client';
 
@@ -59,59 +60,49 @@ export default function Footer() {
               <div className="flex items-center gap-4">
                 
                 <motion.a 
-                  href="#" 
+                  href="https://facebook.com" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="Facebook" 
-                  whileHover={{ scale: 1.15, color: '#2ecc71' }}
+                  whileHover={{ scale: 1.15, }}
                   whileTap={{ scale: 0.95 }}
                   className="text-white transition-colors"
                 >
-                  <svg className="w-8 h-8 md:w-9 md:h-9" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                    <path d="M16 11h-4v9h-4v-9H5V7h3V5.5C8 3.5 9.5 2 12 2h4v4h-3c-.5 0-1 .5-1 1v4h4l-1 4z"></path>
-                  </svg>
+                  <FaFacebook className="w-8 h-8 md:w-9 md:h-9" />
                 </motion.a>
                 
                 <motion.a 
-                  href="#" 
+                  href="https://instagram.com" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="Instagram" 
-                  whileHover={{ scale: 1.15, color: '#2ecc71' }}
+                  whileHover={{ scale: 1.15,}}
                   whileTap={{ scale: 0.95 }}
                   className="text-white transition-colors"
                 >
-                  <svg className="w-8 h-8 md:w-9 md:h-9" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                  </svg>
+                  <FaInstagram className="w-8 h-8 md:w-9 md:h-9" />
                 </motion.a>
                 
                 <motion.a 
-                  href="#" 
+                  href="https://discord.com" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label="Discord" 
-                  whileHover={{ scale: 1.15, color: '#2ecc71' }}
+                  whileHover={{ scale: 1.15,}}
                   whileTap={{ scale: 0.95 }}
                   className="text-white transition-colors"
                 >
-                  <svg className="w-9 h-9 md:w-10 md:h-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 12h.01"></path>
-                    <path d="M15 12h.01"></path>
-                    <path d="M7.5 4.5L6.5 6"></path>
-                    <path d="M16.5 4.5L17.5 6"></path>
-                    <path d="M6 6c-3 1.5-4 5-4 9 0 3 2 4.5 2 4.5h16s2-1.5 2-4.5c0-4-1-7.5-4-9-2 0-3 1.5-3 1.5h-6s-1-1.5-3-1.5z"></path>
-                  </svg>
+                  <FaDiscord className="w-9 h-9 md:w-10 md:h-10" />
                 </motion.a>
 
                 <motion.a 
-                  href="#" 
+                  href="mailto:support@awqat.com" 
                   aria-label="Email" 
-                  whileHover={{ scale: 1.15, color: '#2ecc71' }}
+                  whileHover={{ scale: 1.15,}}
                   whileTap={{ scale: 0.95 }}
                   className="text-white transition-colors"
                 >
-                  <svg className="w-9 h-9 md:w-10 md:h-10" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
+                  <FaEnvelope className="w-8 h-8 md:w-9 md:h-9" />
                 </motion.a>
 
               </div>
@@ -134,14 +125,14 @@ export default function Footer() {
                       href={link.path}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-white hover:text-[#2ecc71] transition-colors"
+                      className="text-white transition-colors"
                     >
                       {link.name}
                     </a>
                   ) : (
                     <Link 
                       to={link.path} 
-                      className="text-white hover:text-[#2ecc71] transition-colors"
+                      className="text-white transition-colors"
                     >
                       {link.name}
                     </Link>
@@ -158,7 +149,7 @@ export default function Footer() {
                 { name: 'Products', path: '/products' }
               ].map((link) => (
                 <motion.div key={link.name} whileHover={{ x: 5 }}>
-                  <Link to={link.path} className="text-white hover:text-[#2ecc71] transition-colors">
+                  <Link to={link.path} className="text-white  transition-colors">
                     {link.name}
                   </Link>
                 </motion.div>

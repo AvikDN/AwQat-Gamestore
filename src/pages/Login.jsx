@@ -82,24 +82,25 @@ export default function Login() {
       variants={containerVariants}
     >
       <motion.div 
-        className="bg-[#5c5c5c] p-6 sm:p-8 md:p-12 w-full max-w-[500px] flex flex-col items-center shadow-2xl relative rounded-2xl md:rounded-none"
+        className="bg-[#5c5c5c] px-6 sm:px-8 md:px-12 w-full max-w-[500px] flex flex-col items-center shadow-2xl relative"
         style={{ 
-          // Applies the controller polygon cut-out strictly on medium screens and up to prevent mobile squishing
-          clipPath: window.innerWidth >= 768 ? 'polygon(0 20px, 20px 0, 20% 0, 28% 20px, 72% 20px, 80% 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 75% 100%, 65% calc(100% - 70px), 35% calc(100% - 70px), 25% 100%, 20px 100%, 0 calc(100% - 20px))' : 'none',
-          paddingBottom: window.innerWidth >= 768 ? '100px' : '2.5rem'
+          // Consistently applies the shape across all devices
+          clipPath: 'polygon(0 20px, 20px 0, 20% 0, 28% 20px, 72% 20px, 80% 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 75% 100%, 65% calc(100% - 70px), 35% calc(100% - 70px), 25% 100%, 20px 100%, 0 calc(100% - 20px))',
+          // Padding protects the content from being cut off by the polygon slices
+          paddingTop: '3rem',
+          paddingBottom: '6rem' 
         }}
         variants={itemVariants}
       >
         
-       {/* Header with inline Logo */}
-<motion.div className="flex items-center justify-center gap-0 mb-8 mt-4" variants={itemVariants}>
-  
-  <img 
-    src={logoImg} 
-    alt="AwQat Logo" 
-    className="h-10 md:h-14 w-auto object-contain" 
-  />
-</motion.div>
+        {/* Header with inline Logo */}
+        <motion.div className="flex items-center justify-center gap-0 mb-8" variants={itemVariants}>
+          <img 
+            src={logoImg} 
+            alt="AwQat Logo" 
+            className="h-10 md:h-14 w-auto object-contain" 
+          />
+        </motion.div>
 
         {/* General Error Message */}
         <AnimatePresence>

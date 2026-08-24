@@ -28,9 +28,6 @@ const MainLayout = () => {
         <source src={bgVideo} type="video/webm" />
       </video>
 
-      {/* Video/Image Overlay */}
-      <div className="fixed inset-0 bg-black/40 pointer-events-none z-0"></div>
-
       {/* Bouncing Logo Overlay */}
       <BouncingLogo />
 
