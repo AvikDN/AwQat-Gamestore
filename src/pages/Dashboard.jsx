@@ -100,15 +100,17 @@ const Dashboard = () => {
                 position="top-center"
                 toastOptions={{
                     style: {
-                        background: '#18181c',
-                        color: '#fff',
-                        border: '1px solid #27272a',
+                        background: '#1a1a1a',
+                        color: '#ffffff',
+                        border: '1px solid #333333',
                         borderRadius: '12px',
                         fontSize: '13px',
-                        fontWeight: '600'
+                        fontWeight: '600',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)'
                     },
-                    success: { iconTheme: { primary: '#10b981', secondary: '#18181c' } },
-                    error: { iconTheme: { primary: '#ef4444', secondary: '#18181c' } }
+                    success: { iconTheme: { primary: '#2ecc71', secondary: '#1a1a1a' } },
+                    error: { iconTheme: { primary: '#ef4444', secondary: '#1a1a1a' } },
+                    loading: { iconTheme: { primary: '#2ecc71', secondary: '#1a1a1a' } }
                 }}
             />
 
