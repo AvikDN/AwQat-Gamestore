@@ -51,7 +51,7 @@ export default function Login() {
 
       if (res.success) {
         setSuccessMsg("Login successful! Redirecting...");
-        setTimeout(() => navigate("/"), 1000);
+        setTimeout(() => navigate("/dashboard"), 1000);
       } else if (res.fieldErrors?.detail) {
         setError("general", {
           type: "server",

@@ -24,6 +24,7 @@ const itemVariants = {
 export default function Reviews() {
   const [reviews, setReviews] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -64,6 +65,10 @@ export default function Reviews() {
     });
   };
 
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
   return (
     <section className="w-full max-w-[1920px] mx-auto py-16 md:py-24 px-4 md:px-8 xl:px-12 relative overflow-hidden select-none">
       
@@ -91,7 +96,7 @@ export default function Reviews() {
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-50px" }}
-        className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6 relative z-10"
+        className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6 relative z-10 items-start"
       >
         {isLoading 
           ? [...Array(4)].map((_, index) => (
@@ -116,60 +121,79 @@ export default function Reviews() {
                 </div>
               </motion.div>
             ))
-          : reviews.map((review) => (
-              <motion.div
-                key={review.id}
-                variants={itemVariants}
-                whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                className="flex flex-col h-full"
-              >
-                <div className="flex flex-col h-full bg-[#18181c] border border-[#27272a] hover:border-[#2ecc71]/40 rounded-[22px] p-4 sm:p-7 transition-all duration-300 shadow-xl group relative overflow-hidden">
-                  
-                  {/* Subtle Background Cyber Watermark Icon */}
-                  <FaQuoteRight className="absolute right-3 bottom-3 text-6xl text-white/[0.02] pointer-events-none group-hover:text-[#2ecc71]/[0.05] transition-colors duration-300" />
+          : reviews.map((review) => {
+              const isExpanded = expandedId === review.id;
+              // Check if text is long enough to potentially need clamping
+              const isLongText = review.text.length > 120; 
 
-                  {/* User Profile & Rating Row */}
-                  <div className="flex items-center gap-3 mb-4 relative z-10">
-                    <div 
-                      className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#121212] border border-[#333] flex items-center justify-center shrink-0 bg-cover bg-center overflow-hidden shadow-inner group-hover:border-[#2ecc71]/50 transition-colors"
-                      style={{ backgroundImage: review.user_avatar ? `url(${review.user_avatar})` : 'none' }}
-                    >
-                      {!review.user_avatar && (
-                        <span className="text-[11px] sm:text-xs font-black text-[#2ecc71]">
-                          {review.user ? review.user.substring(0, 2).toUpperCase() : '??'}
+              return (
+                <motion.div
+                  layout
+                  key={review.id}
+                  variants={itemVariants}
+                  whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                  onClick={() => toggleExpand(review.id)}
+                  className="flex flex-col h-full cursor-pointer"
+                >
+                  <motion.div 
+                    layout
+                    className="flex flex-col h-full bg-[#18181c] border border-[#27272a] hover:border-[#2ecc71]/40 rounded-[22px] p-4 sm:p-7 shadow-xl group relative overflow-hidden transition-colors duration-300"
+                  >
+                    {/* Subtle Background Cyber Watermark Icon */}
+                    <FaQuoteRight className="absolute right-3 bottom-3 text-6xl text-white/[0.02] pointer-events-none group-hover:text-[#2ecc71]/[0.05] transition-colors duration-300" />
+
+                    {/* User Profile & Rating Row */}
+                    <motion.div layout className="flex items-center gap-3 mb-4 relative z-10">
+                      <div 
+                        className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#121212] border border-[#333] flex items-center justify-center shrink-0 bg-cover bg-center overflow-hidden shadow-inner group-hover:border-[#2ecc71]/50 transition-colors"
+                        style={{ backgroundImage: review.user_avatar ? `url(${review.user_avatar})` : 'none' }}
+                      >
+                        {!review.user_avatar && (
+                          <span className="text-[11px] sm:text-xs font-black text-[#2ecc71]">
+                            {review.user ? review.user.substring(0, 2).toUpperCase() : '??'}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-white font-extrabold text-xs sm:text-base tracking-tight truncate group-hover:text-[#2ecc71] transition-colors">
+                          {review.user}
+                        </span>
+                        <div className="mt-0.5 scale-90 sm:scale-100 origin-left">
+                          {renderStars(review.rating)}
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Review Text Body */}
+                    <motion.div layout className="flex-grow relative z-10 mb-5">
+                      <p className={`text-zinc-300 text-xs sm:text-sm font-medium leading-relaxed ${isExpanded ? '' : 'line-clamp-4'}`}>
+                        "{review.text}"
+                      </p>
+                      {isLongText && (
+                        <span className="text-[#2ecc71] text-[10px] sm:text-xs font-bold mt-1 inline-block opacity-80 group-hover:opacity-100 transition-opacity">
+                          {isExpanded ? 'Show less' : 'Read more'}
                         </span>
                       )}
-                    </div>
-                    
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-white font-extrabold text-xs sm:text-base tracking-tight truncate group-hover:text-[#2ecc71] transition-colors">
-                        {review.user}
-                      </span>
-                      <div className="mt-0.5 scale-90 sm:scale-100 origin-left">
-                        {renderStars(review.rating)}
+                    </motion.div>
+
+                    {/* Game Tag & Timestamp Footer */}
+                    <motion.div layout className="mt-auto pt-3 border-t border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-2 relative z-10">
+                      <div className="flex-1 min-w-0 flex items-center">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#121212] border border-[#333] text-[9px] sm:text-[11px] font-bold text-white max-w-full" title={review.game_title || `Game #${review.game}`}>
+                          <FaGamepad className="w-3 h-3 text-[#2ecc71] shrink-0" />
+                          <span className="truncate">{review.game_title || `Game #${review.game}`}</span>
+                        </span>
                       </div>
-                    </div>
-                  </div>
+                      <span className="text-[10px] sm:text-[11px] font-bold text-zinc-500 shrink-0 whitespace-nowrap">
+                        {formatDate(review.created_at)}
+                      </span>
+                    </motion.div>
 
-                  {/* Review Text Body */}
-                  <div className="text-zinc-300 text-xs sm:text-sm font-medium leading-relaxed mb-5 flex-grow relative z-10 line-clamp-4">
-                    "{review.text}"
-                  </div>
-
-                  {/* Game Tag & Timestamp Footer (Stacked cleanly on mobile to prevent clipping) */}
-                  <div className="mt-auto pt-3 border-t border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-2 relative z-10">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#121212] border border-[#333] text-[10px] sm:text-xs font-bold text-zinc-300 truncate w-full sm:w-auto" title={review.game_title || `Game #${review.game}`}>
-                      <FaGamepad className="w-3 h-3 text-[#2ecc71] shrink-0" />
-                      <span className="truncate">{review.game_title || `Game #${review.game}`}</span>
-                    </span>
-                    <span className="text-[10px] sm:text-[11px] font-semibold text-zinc-500 self-end sm:self-auto shrink-0">
-                      {formatDate(review.created_at)}
-                    </span>
-                  </div>
-
-                </div>
-              </motion.div>
-            ))
+                  </motion.div>
+                </motion.div>
+              );
+            })
         }
       </motion.div>
     </section>

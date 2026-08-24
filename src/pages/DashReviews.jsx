@@ -101,7 +101,7 @@ export default function Dashreview() {
   const executeDelete = async (id) => {
     const toastId = toast.loading("Deleting review...");
     try {
-      await AuthApiClient.delete(`reviews/${id}/`);
+      await AuthApiClient.delete(`/api/reviews/${id}/`);
       setReviews(prev => prev.filter(r => r.id !== id));
       setTotalCount(prev => prev - 1);
       toast.success("Review deleted!", { id: toastId });
