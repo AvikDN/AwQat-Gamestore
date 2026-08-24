@@ -247,6 +247,11 @@ export default function ProductDetails() {
   const discountValue = Number(product.discount || 0);
   const hasDiscount = discountValue > 0;
   
+  // Calculate the percentage to display on the tag
+  const discountPercentage = hasDiscount 
+    ? (discountValue <= 100 ? discountValue : Math.round((discountValue / originalPrice) * 100))
+    : 0;
+  
   const unitFinalPrice = hasDiscount 
     ? (discountValue <= 100 ? originalPrice - (originalPrice * discountValue) / 100 : originalPrice - discountValue) 
     : originalPrice;
@@ -287,7 +292,7 @@ export default function ProductDetails() {
             <motion.div variants={itemVariants} className="w-full aspect-video bg-[#1a1a1a] rounded-xl overflow-hidden flex items-center justify-center shadow-xl border border-transparent hover:border-[#2ecc71]/30 transition-colors relative">
               {hasDiscount && !isComingSoon && (
                 <div className="absolute top-4 right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-sm sm:text-base px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(46,204,113,0.6)]">
-                  Sale
+                  -{discountPercentage}%
                 </div>
               )}
               {isComingSoon && (
@@ -572,19 +577,19 @@ export default function ProductDetails() {
                   </span>
                 </div>
               ) : (
-                <div className="flex items-baseline gap-3 mb-6 relative z-10">
+                <div className="flex items-baseline gap-2 mb-6 relative z-10">
                   <span className="text-sm font-bold text-white">Price:</span>
                   {hasDiscount ? (
-                    <div className="flex items-center gap-3">
-                      <span className="text-gray-400 line-through text-2xl md:text-3xl font-bold">
+                    <>
+                      <span className="text-sm font-bold text-gray-400 line-through">
                         {totalOriginalPrice} ৳
                       </span>
-                      <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
+                      <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71] ml-2">
                         {totalPrice.toFixed(0)} ৳
                       </span>
-                    </div>
+                    </>
                   ) : (
-                    <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71]">
+                    <span className="text-3xl md:text-5xl font-black tracking-tight text-[#2ecc71] ml-2">
                       {totalOriginalPrice} ৳
                     </span>
                   )}

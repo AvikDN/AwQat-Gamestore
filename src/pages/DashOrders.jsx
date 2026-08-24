@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import authApiClient from '../services/auth-api-client';
 import {
   FaClipboardList,
@@ -107,6 +108,7 @@ const DashOrder = () => {
           updatedDate: new Date(order.updated_at).toLocaleString(),
           items: (order.items || []).map(item => ({
             id: item.id,
+            game_id: item.game, // Added this to route correctly
             name: item.game_title || item.game?.title || 'Unknown Game',
             quantity: item.quantity,
             unitPrice: parseFloat(item.price_at_purchase),
@@ -427,16 +429,17 @@ const DashOrder = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {order.items.map((item) => (
-                          <div
+                          <Link
                             key={item.id}
-                            className="bg-[#161616] border border-[#262626] rounded-xl p-3.5 flex items-center justify-between gap-4 hover:border-[#333333] transition shadow-sm"
+                            to={`/product/${item.game_id}`}
+                            className="group bg-[#161616] border border-[#262626] rounded-xl p-3.5 flex items-center justify-between gap-4 hover:border-[#2ecc71]/50 hover:bg-[#1a1a1c] transition-all shadow-sm cursor-pointer"
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="p-2 bg-[#2ecc71]/10 rounded-lg text-[#2ecc71] shrink-0 hidden sm:block">
                                 <FaGamepad className="text-sm" />
                               </div>
                               <div className="min-w-0">
-                                <h4 className="text-xs sm:text-sm font-extrabold text-white truncate" title={item.name}>
+                                <h4 className="text-xs sm:text-sm font-extrabold text-white truncate group-hover:text-[#2ecc71] transition-colors" title={item.name}>
                                   {item.name}
                                 </h4>
                                 <p className="text-[11px] text-gray-400 font-medium mt-0.5">
@@ -448,7 +451,7 @@ const DashOrder = () => {
                             <div className="text-xs sm:text-sm font-black text-white shrink-0">
                               ৳{item.totalPrice.toFixed(0)}
                             </div>
-                          </div>
+                          </Link>
                         ))}
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import {
   FaClipboardList,
   FaSearch,
@@ -439,15 +440,19 @@ const DashHistory = () => {
                         </span>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {order.games?.map((game, idx) => (
-                            <div key={idx} className="bg-[#121212] border border-[#27272a] hover:border-[#3f3f46] transition-colors rounded-xl p-3 flex items-center justify-between text-xs sm:text-sm shadow-sm">
-                              <span className="font-bold text-zinc-200 truncate pr-3" title={game.title}>
+                            <Link 
+                              key={idx} 
+                              to={`/product/${game.game_id}`}
+                              className="group bg-[#121212] border border-[#27272a] hover:border-[#2ecc71]/50 hover:bg-[#161616] transition-all rounded-xl p-3 flex items-center justify-between text-xs sm:text-sm shadow-sm cursor-pointer"
+                            >
+                              <span className="font-bold text-zinc-200 group-hover:text-[#2ecc71] transition-colors truncate pr-3" title={game.title}>
                                 {game.title}
                               </span>
                               <div className="flex items-center gap-4 shrink-0 bg-[#18181c] px-2 py-1 rounded-lg border border-[#27272a]">
                                 <span className="text-zinc-500 font-semibold">Qty: <span className="text-zinc-300">{game.quantity}</span></span>
                                 <span className="font-black text-emerald-400">৳{parseFloat(game.price_at_purchase || 0).toFixed(2)}</span>
                               </div>
-                            </div>
+                            </Link>
                           ))}
                         </div>
                       </div>

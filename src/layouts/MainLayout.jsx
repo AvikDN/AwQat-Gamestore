@@ -1,26 +1,47 @@
 import { Outlet } from "react-router";
 import Navbar from "../components/NavBar";
 import Footer from "../components/Footer";
-import bgImage from "../assets/pics/Categories/bg.jpg";
+import bgVideo from "../assets/pics/BGs/BG snow.webm"; 
+import bgImg from "../assets/pics/BGs/bg.jpg";
+import BouncingLogo from "../components/BouncingLogo";
 
 const MainLayout = () => {
   return (
-    <div 
-      className="min-h-screen flex flex-col bg-cover bg-center bg-no-repeat relative"
-      style={{ backgroundImage: `url(${bgImage})` }}
-    >
-      <div className="absolute inset-050 pointer-events-none z-0"></div>
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-black">
+      
+      {/* Mobile Static Background Image (Visible only on small screens) */}
+      <img
+        src={bgImg}
+        alt="Background"
+        className="fixed inset-0 w-full h-full object-cover object-center z-0 md:hidden block"
+      />
 
+      {/* Desktop Background Video (Hidden on mobile to prevent lag/battery drain) */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        poster={bgImg}
+        className="fixed inset-0 w-full h-full object-cover object-center z-0 hidden md:block"
+      >
+        <source src={bgVideo} type="video/webm" />
+      </video>
+
+      {/* Video/Image Overlay */}
+      <div className="fixed inset-0 bg-black/40 pointer-events-none z-0"></div>
+
+      {/* Bouncing Logo Overlay */}
+      <BouncingLogo />
+
+      {/* Content Wrapper */}
       <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Navbar stays at the top */}
         <Navbar />
 
-        {/* Main content takes the remaining height */}
         <main className="flex-1">
           <Outlet />
         </main>
 
-        {/* Footer sticks to the bottom */}
         <Footer />
       </div>
     </div>

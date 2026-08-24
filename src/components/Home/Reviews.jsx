@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaGamepad, FaQuoteRight, FaStar } from 'react-icons/fa6';
+import { Link } from 'react-router-dom';
 import apiClient from '../../services/api-client';
 
 const containerVariants = {
@@ -40,7 +41,6 @@ export default function Reviews() {
       });
   }, []);
 
-  // Helper function to render stars
   const renderStars = (rating) => {
     const maxStars = 5;
     return (
@@ -55,7 +55,6 @@ export default function Reviews() {
     );
   };
 
-  // Helper function to format date
   const formatDate = (isoString) => {
     const date = new Date(isoString);
     return date.toLocaleDateString('en-US', {
@@ -123,7 +122,6 @@ export default function Reviews() {
             ))
           : reviews.map((review) => {
               const isExpanded = expandedId === review.id;
-              // Check if text is long enough to potentially need clamping
               const isLongText = review.text.length > 120; 
 
               return (
@@ -168,7 +166,7 @@ export default function Reviews() {
                     {/* Review Text Body */}
                     <motion.div layout className="flex-grow relative z-10 mb-5">
                       <p className={`text-zinc-300 text-xs sm:text-sm font-medium leading-relaxed ${isExpanded ? '' : 'line-clamp-4'}`}>
-                        "{review.text}"
+                        {review.text}
                       </p>
                       {isLongText && (
                         <span className="text-[#2ecc71] text-[10px] sm:text-xs font-bold mt-1 inline-block opacity-80 group-hover:opacity-100 transition-opacity">
@@ -180,10 +178,15 @@ export default function Reviews() {
                     {/* Game Tag & Timestamp Footer */}
                     <motion.div layout className="mt-auto pt-3 border-t border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-2 relative z-10">
                       <div className="flex-1 min-w-0 flex items-center">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#121212] border border-[#333] text-[9px] sm:text-[11px] font-bold text-white max-w-full" title={review.game_title || `Game #${review.game}`}>
+                        <Link 
+                          to={`/product/${review.game}`} 
+                          onClick={(e) => e.stopPropagation()} 
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#121212] border border-[#333] hover:border-[#2ecc71] hover:text-[#2ecc71] text-[9px] sm:text-[11px] font-bold text-white max-w-full transition-colors duration-200" 
+                          title={review.game_title || `Game #${review.game}`}
+                        >
                           <FaGamepad className="w-3 h-3 text-[#2ecc71] shrink-0" />
                           <span className="truncate">{review.game_title || `Game #${review.game}`}</span>
-                        </span>
+                        </Link>
                       </div>
                       <span className="text-[10px] sm:text-[11px] font-bold text-zinc-500 shrink-0 whitespace-nowrap">
                         {formatDate(review.created_at)}

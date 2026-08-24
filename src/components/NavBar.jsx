@@ -204,14 +204,14 @@ export default function NavBar() {
             </NavLink>
             
             <NavLink 
-              to="/contact" 
+              to="/about" 
               className={({ isActive }) => 
                 `relative font-bold transition-colors duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
               }
             >
               {({ isActive }) => (
                 <>
-                  Contact
+                  About
                   {isActive && (
                     <motion.div 
                       layoutId="desktop-nav-underline"
