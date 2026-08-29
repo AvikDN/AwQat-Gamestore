@@ -53,27 +53,41 @@ export default function Reviews() {
       .then(response => {
         const rawData = response.data?.results || response.data;
         const list = Array.isArray(rawData) ? rawData : [];
+        const hasNext = !!response.data?.next;
 
-        setHasNextPage(!!response.data?.next);
+        setHasNextPage(hasNext);
+        setPage(pageNum);
 
         setReviews(prevReviews => {
-          if (pageNum === 1) return list;
+          const combined = pageNum === 1 ? list : [...prevReviews, ...list];
           
-          // Light deduplication: Keep items if they don't have IDs, otherwise filter exact ID matches
-          const existingIds = new Set(prevReviews.map(r => r.id).filter(Boolean));
-          const newItems = list.filter(r => !r.id || !existingIds.has(r.id));
-          
-          return [...prevReviews, ...newItems];
-        });
+          // Strict deduplication: Only keep ONE review per unique user
+          const seenUsers = new Set();
+          const filteredReviews = combined.filter((review) => {
+            if (!review.user) return true; // Fallback for bad data
+            if (seenUsers.has(review.user)) return false;
+            seenUsers.add(review.user);
+            return true;
+          });
 
-        setPage(pageNum);
+          // SMART FAILSAFE: If heavy duplicate filtering wiped out the entire new page 
+          // and there is another page available, auto-fetch the next page immediately 
+          // so the "See More" button doesn't visually stall.
+          if (pageNum > 1 && filteredReviews.length === prevReviews.length && hasNext) {
+            setTimeout(() => fetchReviews(pageNum + 1), 0);
+          } else {
+            setIsLoadingMore(false);
+          }
+
+          return filteredReviews;
+        });
       })
       .catch(error => {
         console.error("Error fetching reviews:", error);
+        setIsLoadingMore(false);
       })
       .finally(() => {
         setIsLoading(false);
-        setIsLoadingMore(false);
       });
   };
 
@@ -184,7 +198,6 @@ export default function Reviews() {
               return (
                 <motion.div
                   layout
-                  // Highly resilient key to prevent DOM dropping
                   key={review.id ? `rev-${review.id}` : `rev-idx-${index}`}
                   initial="hidden"
                   whileInView="visible"
