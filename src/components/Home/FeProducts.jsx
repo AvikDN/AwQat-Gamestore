@@ -26,7 +26,6 @@ export default function FeaturedProducts() {
   const [isLoading, setIsLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(10); 
   
-  // Pull the addToCart function from our context
   const { addToCart } = useCartContext();
 
   useEffect(() => {
@@ -37,9 +36,9 @@ export default function FeaturedProducts() {
       } else if (width >= 1024) {
         setVisibleCount(8);  
       } else if (width >= 768) {
-        setVisibleCount(6);  
+        setVisibleCount(8);  
       } else {
-        setVisibleCount(4);  
+        setVisibleCount(8);  
       }
     };
 

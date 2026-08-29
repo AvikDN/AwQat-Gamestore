@@ -475,7 +475,7 @@ export default function NavBar() {
             
             <motion.div variants={linkVariants}>
               <NavLink 
-                to="/contact" 
+                to="/about" 
                 onClick={() => setIsMenuOpen(false)}
                 className={({ isActive }) => 
                   `relative font-bold text-xl transition-colors duration-300 ${isActive ? 'text-[#2ecc71]' : 'text-white hover:text-gray-300'}`
@@ -483,7 +483,7 @@ export default function NavBar() {
               >
                 {({ isActive }) => (
                   <>
-                    Contact
+                    About
                     {isActive && (
                       <motion.div 
                         layoutId="mobile-nav-underline"
