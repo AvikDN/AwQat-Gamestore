@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaFacebook, FaInstagram, FaDiscord, FaEnvelope } from 'react-icons/fa6';
 import logofullImg from '../assets/Awqat_full.png'; 
+import tanbinImg from '../assets/tanbin.jpg';
+import avikImg from '../assets/avik.jpg';
 import authApiClient from '../services/auth-api-client';
 
 const containerVariants = {
@@ -36,7 +38,7 @@ export default function Footer() {
     >
       <motion.div 
         variants={containerVariants}
-        className="max-w-[1400px] mx-auto flex flex-col"
+        className="max-w-350 mx-auto flex flex-col"
       >
         
         {/* Main Content: Stacks on mobile, Side-by-side on desktop */}
@@ -61,10 +63,10 @@ export default function Footer() {
                 
                 <motion.a 
                   href="https://facebook.com" 
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_blank" 
+                  rel="noopener noreferrer" 
                   aria-label="Facebook" 
-                  whileHover={{ scale: 1.15, }}
+                  whileHover={{ scale: 1.15 }}
                   whileTap={{ scale: 0.95 }}
                   className="text-white transition-colors"
                 >
@@ -73,10 +75,10 @@ export default function Footer() {
                 
                 <motion.a 
                   href="https://instagram.com" 
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_blank" 
+                  rel="noopener noreferrer" 
                   aria-label="Instagram" 
-                  whileHover={{ scale: 1.15,}}
+                  whileHover={{ scale: 1.15 }}
                   whileTap={{ scale: 0.95 }}
                   className="text-white transition-colors"
                 >
@@ -85,10 +87,10 @@ export default function Footer() {
                 
                 <motion.a 
                   href="https://discord.com" 
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_blank" 
+                  rel="noopener noreferrer" 
                   aria-label="Discord" 
-                  whileHover={{ scale: 1.15,}}
+                  whileHover={{ scale: 1.15 }}
                   whileTap={{ scale: 0.95 }}
                   className="text-white transition-colors"
                 >
@@ -98,7 +100,7 @@ export default function Footer() {
                 <motion.a 
                   href="mailto:support@awqat.com" 
                   aria-label="Email" 
-                  whileHover={{ scale: 1.15,}}
+                  whileHover={{ scale: 1.15 }}
                   whileTap={{ scale: 0.95 }}
                   className="text-white transition-colors"
                 >
@@ -122,9 +124,9 @@ export default function Footer() {
                 <motion.div key={link.name} whileHover={{ x: 5 }}>
                   {link.isExternal ? (
                     <a 
-                      href={link.path}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={link.path} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
                       className="text-white transition-colors"
                     >
                       {link.name}
@@ -149,7 +151,7 @@ export default function Footer() {
                 { name: 'Products', path: '/products' }
               ].map((link) => (
                 <motion.div key={link.name} whileHover={{ x: 5 }}>
-                  <Link to={link.path} className="text-white  transition-colors">
+                  <Link to={link.path} className="text-white transition-colors">
                     {link.name}
                   </Link>
                 </motion.div>
@@ -160,13 +162,47 @@ export default function Footer() {
 
         </div>
 
-        {/* Divider and Copyright */}
+        {/* Divider, Copyright, and Developer Credits */}
         <motion.div 
           variants={itemVariants}
-          className="w-full border-t border-gray-500 pt-5 mt-12 text-center md:text-left"
+          className="w-full border-t border-gray-500 pt-5 mt-12 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left"
         >
           <p className="text-white text-sm md:text-base tracking-wide">
             2026 AwQat. All rights reserved.
+          </p>
+
+          <p className="text-gray-300 text-sm md:text-base tracking-wide flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <span>Developed by</span>
+            
+            <a 
+              href="https://mdtanbinali-portfolio.vercel.app" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-white font-bold hover:text-[#FD5353] transition-colors"
+            >
+              <img 
+                src={tanbinImg} 
+                alt="MD Tanbin Ali" 
+                className="w-5 h-5 rounded-full object-cover border border-white/20"
+              />
+              <span>MD Tanbin Ali</span>
+            </a>
+
+            <span>&</span>
+
+            <a 
+              href="https://avikdebnath-portfolio.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-white font-bold hover:text-[#FD5353] transition-colors"
+            >
+              <img 
+                src={avikImg} 
+                alt="Avik Deb Nath" 
+                className="w-5 h-5 rounded-full object-cover border border-white/20"
+              />
+              <span>Avik Deb Nath</span>
+            </a>
           </p>
         </motion.div>
         

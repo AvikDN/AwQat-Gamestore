@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
   FaGamepad, 
   FaPlus, 
@@ -12,15 +12,26 @@ import {
   FaImage,
   FaVideo,
   FaSpinner,
-  FaTriangleExclamation
+  FaArrowUpRightFromSquare,
 } from 'react-icons/fa6';
+import { Link } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import ApiClient from '../services/api-client';
 import AuthApiClient from '../services/auth-api-client';
 
-const MAX_FILE_SIZE_MB = 4;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const MAX_IMAGE_SIZE_MB = 10;
+const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024;
+
+const darkToastStyle = {
+  background: '#18181c',
+  color: '#ffffff',
+  border: '1px solid #27272a',
+  borderRadius: '12px',
+  fontSize: '13px',
+  fontWeight: '600',
+  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+};
 
 const defaultSysReq = {
   os: '',
@@ -29,6 +40,62 @@ const defaultSysReq = {
   graphics: '',
   storage: '',
   directx: ''
+};
+
+// Fast client-side image compression to WebP
+const compressImage = async (file) => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+
+    const img = document.createElement('img');
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      img.src = e.target.result;
+    };
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const maxDimension = 1920;
+      let { width, height } = img;
+
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+          const cleanName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
+          resolve(new File([blob], cleanName, { type: 'image/webp' }));
+        },
+        'image/webp',
+        0.82
+      );
+    };
+
+    img.onerror = () => resolve(file);
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
 };
 
 const getFinalPrice = (product) => {
@@ -68,12 +135,11 @@ export default function DashGames() {
   const [categories, setCategories] = useState([]);
   const [studios, setStudios] = useState([]);
 
-  // Modal & Tooltip States
+  // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentEditId, setCurrentEditId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showWarning, setShowWarning] = useState(false);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -83,40 +149,28 @@ export default function DashGames() {
   const [studio, setStudio] = useState('');
   const [developer, setDeveloper] = useState('');
   const [platforms, setPlatforms] = useState('');
-  const [active, setActive] = useState(true);
+  const [active, setActive] = useState(true); // true = Available, false = Upcoming
   const [sysReqs, setSysReqs] = useState(defaultSysReq);
-  
+
   const [selectedImages, setSelectedImages] = useState([]); 
   const [existingImages, setExistingImages] = useState([]); 
-  const [videoFile, setVideoFile] = useState(null);
+  const [videoUrl, setVideoUrl] = useState('');
 
   const topRef = useRef(null);
-  const warningRef = useRef(null);
 
-  // Handle outside click for mobile warning tooltip
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (warningRef.current && !warningRef.current.contains(event.target)) {
-        setShowWarning(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Fetch ALL Studios and Categories (Handling Pagination)
+  // Fetch Studios and Categories
   useEffect(() => {
     const fetchAllPages = async (endpoint) => {
       let results = [];
       let url = endpoint;
-      
+
       while (url) {
         try {
           const isAbsolute = url.startsWith('http');
           const requestUrl = isAbsolute ? `${new URL(url).pathname}${new URL(url).search}` : url;
-          
+
           const res = await ApiClient.get(requestUrl);
-          
+
           if (res.data && res.data.results) {
             results = [...results, ...res.data.results];
             url = res.data.next;
@@ -150,6 +204,18 @@ export default function DashGames() {
     loadFilters();
   }, []);
 
+  useEffect(() => {
+    if (categories.length > 0 && !category && !isEditing) {
+      setCategory(categories[0].id);
+    }
+  }, [categories, category, isEditing]);
+
+  useEffect(() => {
+    if (studios.length > 0 && !studio && !isEditing) {
+      setStudio(studios[0].id);
+    }
+  }, [studios, studio, isEditing]);
+
   // Debounce Search & Price
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -165,66 +231,73 @@ export default function DashGames() {
     setPage(1);
   }, [debouncedSearch, sortOrder, debouncedMinPrice, debouncedMaxPrice, selectedStudio, selectedCategory, selectedAvailability]);
 
-  // Fetch Games
-  useEffect(() => {
-    const fetchGames = async () => {
-      setIsLoading(true);
-      try {
-        let endpoint = '/games/';
-        if (selectedAvailability === 'Coming soon') {
-          endpoint = '/games/upcoming/';
-        } else if (sortOrder === 'discounted') {
-          endpoint = '/games/discounted/';
-        }
-
-        const queryParams = new URLSearchParams({ page });
-        
-        if (debouncedSearch) queryParams.append('search', debouncedSearch);
-        
-        if (sortOrder === 'price-asc') {
-          queryParams.append('ordering', 'final_price');
-          queryParams.append('min_price', debouncedMinPrice === 0 ? 1 : debouncedMinPrice);
-        } else {
-          queryParams.append('min_price', debouncedMinPrice);
-          if (sortOrder === 'price-desc') queryParams.append('ordering', '-final_price');
-        }
-
-        queryParams.append('max_price', debouncedMaxPrice);
-        if (selectedStudio !== 'All') queryParams.append('studio', selectedStudio);
-        if (selectedCategory !== 'All') queryParams.append('category', selectedCategory);
-
-        const response = await ApiClient.get(`${endpoint}?${queryParams.toString()}`);
-        const data = response.data;
-        
-        let fetchedGames = Array.isArray(data) ? data : (data.results || []);
-
-        // Filter out zero-price or inactive games on low-to-high sort
-        if (sortOrder === 'price-asc') {
-          fetchedGames = fetchedGames.filter(game => game.active && parseFloat(game.price) > 0);
-        }
-
-        setGames(fetchedGames);
-
-        if (Array.isArray(data)) {
-          setHasNext(false);
-          setHasPrev(false);
-        } else {
-          setHasNext(!!data.next);
-          setHasPrev(!!data.previous);
-        }
-      } catch (error) {
-        console.error("Error fetching games:", error);
-        toast.error("Failed to load games inventory.");
-      } finally {
-        setIsLoading(false);
+  // Fetch Games (Memoized to preserve active filters across mutations)
+  const fetchGames = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      let endpoint = '/games/';
+      if (selectedAvailability === 'Coming soon') {
+        endpoint = '/games/upcoming/';
+      } else if (sortOrder === 'discounted') {
+        endpoint = '/games/discounted/';
       }
-    };
 
+      const queryParams = new URLSearchParams({ page });
+
+      if (debouncedSearch) queryParams.append('search', debouncedSearch);
+
+      if (sortOrder === 'price-asc') {
+        queryParams.append('ordering', 'final_price');
+        queryParams.append('min_price', debouncedMinPrice === 0 ? 1 : debouncedMinPrice);
+      } else {
+        queryParams.append('min_price', debouncedMinPrice);
+        if (sortOrder === 'price-desc') queryParams.append('ordering', '-final_price');
+      }
+
+      queryParams.append('max_price', debouncedMaxPrice);
+      if (selectedStudio !== 'All') queryParams.append('studio', selectedStudio);
+      if (selectedCategory !== 'All') queryParams.append('category', selectedCategory);
+
+      const response = await ApiClient.get(`${endpoint}?${queryParams.toString()}`);
+      const data = response.data;
+
+      let fetchedGames = Array.isArray(data) ? data : (data.results || []);
+
+      if (sortOrder === 'price-asc') {
+        fetchedGames = fetchedGames.filter(game => game.active && parseFloat(game.price) > 0);
+      }
+
+      setGames(fetchedGames);
+
+      if (Array.isArray(data)) {
+        setHasNext(false);
+        setHasPrev(false);
+      } else {
+        setHasNext(!!data.next);
+        setHasPrev(!!data.previous);
+      }
+    } catch (error) {
+      console.error("Error fetching games:", error);
+      toast.error("Failed to load games inventory.", { style: darkToastStyle });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    page,
+    debouncedSearch,
+    sortOrder,
+    debouncedMinPrice,
+    debouncedMaxPrice,
+    selectedStudio,
+    selectedCategory,
+    selectedAvailability
+  ]);
+
+  useEffect(() => {
     fetchGames();
     scrollToFormArea();
-  }, [page, debouncedSearch, sortOrder, debouncedMinPrice, debouncedMaxPrice, selectedStudio, selectedCategory, selectedAvailability]);
+  }, [fetchGames]);
 
-  // Handlers
   const handleNextPage = () => { if (hasNext) setPage(p => p + 1); };
   const handlePrevPage = () => { if (hasPrev) setPage(p => p - 1); };
 
@@ -275,10 +348,10 @@ export default function DashGames() {
     setDeveloper('');
     setPlatforms('');
     setSysReqs(defaultSysReq);
-    setActive(true);
+    setActive(true); // Default to Available
     setSelectedImages([]);
     setExistingImages([]);
-    setVideoFile(null);
+    setVideoUrl('');
     setIsModalOpen(true);
     scrollToFormArea();
   };
@@ -299,34 +372,34 @@ export default function DashGames() {
     setActive(game.active ?? true);
     setSelectedImages([]);
     setExistingImages(game.images || []); 
-    setVideoFile(null);
+    setVideoUrl(game.video || '');
     setIsModalOpen(true);
     scrollToFormArea();
   };
 
   const executeDelete = async (id) => {
-    const toastId = toast.loading("Deleting game...");
+    const toastId = toast.loading("Deleting game...", { style: darkToastStyle });
     try {
       await AuthApiClient.delete(`/api/games/${id}/`);
-      setGames(prev => prev.filter(g => g.id !== id));
-      toast.success("Game deleted successfully!", { id: toastId });
+      await fetchGames();
+      toast.success("Game deleted successfully!", { id: toastId, style: darkToastStyle });
     } catch (error) {
       console.error("Error deleting game:", error);
-      toast.error("Failed to delete game.", { id: toastId });
+      toast.error("Failed to delete game.", { id: toastId, style: darkToastStyle });
     }
   };
 
   const confirmDelete = (id) => {
     toast(
       (t) => (
-        <div className="flex flex-col gap-3 min-w-[200px]">
+        <div className="flex flex-col gap-3 min-w-50">
           <p className="text-sm font-semibold text-white">
             Are you sure you want to delete this game?
           </p>
           <div className="flex gap-2 justify-end mt-1">
             <button
               onClick={() => toast.dismiss(t.id)}
-              className="px-3 py-1.5 bg-[#1a1a1a] hover:bg-black text-gray-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-[#121212] hover:bg-[#202025] text-zinc-300 border border-[#27272a] rounded-lg text-xs font-bold transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -335,7 +408,7 @@ export default function DashGames() {
                 toast.dismiss(t.id);
                 executeDelete(id); 
               }}
-              className="px-3 py-1.5 bg-[#ff6b6b] hover:bg-[#e05858] text-black rounded-lg text-xs font-bold transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-md"
             >
               Delete
             </button>
@@ -344,12 +417,7 @@ export default function DashGames() {
       ),
       {
         duration: Infinity,
-        style: {
-          background: '#333',
-          color: '#fff',
-          border: '1px solid #444',
-          borderRadius: '10px',
-        }
+        style: darkToastStyle,
       }
     );
   };
@@ -360,25 +428,21 @@ export default function DashGames() {
 
   const handleImagesChange = (e) => {
     const files = Array.from(e.target.files);
+    const oversizedFiles = files.filter(f => f.size > MAX_IMAGE_SIZE_BYTES);
+
+    if (oversizedFiles.length > 0) {
+      toast.error(`Each image must be smaller than ${MAX_IMAGE_SIZE_MB}MB.`, { style: darkToastStyle });
+      e.target.value = '';
+      return;
+    }
+
     const totalCurrentCount = existingImages.length + selectedImages.length + files.length;
     if (totalCurrentCount > 4) {
-      toast.error("You can only upload up to 4 images total.");
+      toast.error("You can only upload up to 4 images total.", { style: darkToastStyle });
       return;
     }
+
     setSelectedImages(prev => [...prev, ...files]);
-  };
-
-  const handleVideoChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      toast.error("Video exceeds 4MB limit. Convert to .webm format to reduce size.");
-      e.target.value = '';
-      setVideoFile(null);
-      return;
-    }
-    setVideoFile(file);
   };
 
   const removeSelectedImage = (index) => {
@@ -386,14 +450,14 @@ export default function DashGames() {
   };
 
   const removeExistingImage = async (imageId) => {
-    const toastId = toast.loading("Deleting image...");
+    const toastId = toast.loading("Deleting image...", { style: darkToastStyle });
     try {
       await AuthApiClient.delete(`/api/game-images/${imageId}/`);
       setExistingImages(prev => prev.filter(img => img.id !== imageId));
-      toast.success("Image removed!", { id: toastId });
+      toast.success("Image removed!", { id: toastId, style: darkToastStyle });
     } catch (error) {
       console.error("Error deleting image:", error);
-      toast.error("Failed to remove image.", { id: toastId });
+      toast.error("Failed to remove image.", { id: toastId, style: darkToastStyle });
     }
   };
 
@@ -402,25 +466,61 @@ export default function DashGames() {
     if (isSubmitting) return;
 
     if (!title.trim() || !price) {
-      toast.error("Please fill in required fields (Title, Price).");
+      toast.error("Please fill in required fields (Title, Price).", { style: darkToastStyle });
+      return;
+    }
+
+    if (!category) {
+      toast.error("Please select a Category.", { style: darkToastStyle });
+      return;
+    }
+
+    if (!studio) {
+      toast.error("Please select a Studio.", { style: darkToastStyle });
+      return;
+    }
+
+    const numPrice = parseFloat(price);
+    if (isNaN(numPrice) || numPrice < 0) {
+      toast.error("Please enter a valid numeric price.", { style: darkToastStyle });
+      return;
+    }
+
+    const numDiscount = discount === '' ? 0 : parseFloat(discount);
+    if (isNaN(numDiscount) || numDiscount < 0 || numDiscount > 100) {
+      toast.error("Discount must be between 0 and 100.", { style: darkToastStyle });
       return;
     }
 
     setIsSubmitting(true);
-    const toastId = toast.loading(isEditing ? "Updating game details..." : "Creating game record...");
+    const toastId = toast.loading(
+      isEditing ? "Updating game details..." : "Creating game record...",
+      { style: darkToastStyle }
+    );
 
     try {
+      const cleanSysReqs = {};
+      Object.entries(sysReqs || {}).forEach(([key, val]) => {
+        if (val && typeof val === 'string' && val.trim()) {
+          cleanSysReqs[key] = val.trim();
+        }
+      });
+
       const formData = new FormData();
       formData.append('title', title.trim());
-      formData.append('description', description.trim());
-      formData.append('price', parseFloat(price));
-      formData.append('discount', parseFloat(discount));
-      if (category) formData.append('category', category);
-      if (studio) formData.append('studio', studio);
-      formData.append('developer', developer.trim());
-      formData.append('platforms', platforms.trim());
+      formData.append('price', numPrice);
+      formData.append('discount', numDiscount);
+      formData.append('category', category);
+      formData.append('studio', studio);
       formData.append('active', active);
-      formData.append('system_requirements', JSON.stringify(sysReqs));
+      formData.append('description', description.trim() || 'No description provided.');
+      formData.append('developer', developer.trim() || 'Unknown');
+      formData.append('platforms', platforms.trim() || 'PC');
+      formData.append('system_requirements', JSON.stringify(cleanSysReqs));
+
+      if (videoUrl && videoUrl.trim()) {
+        formData.append('video', videoUrl.trim());
+      }
 
       let gameId = currentEditId;
 
@@ -436,36 +536,50 @@ export default function DashGames() {
       }
 
       if (selectedImages.length > 0) {
-        for (let i = 0; i < selectedImages.length; i++) {
-          toast.loading(`Uploading image ${i + 1} of ${selectedImages.length}...`, { id: toastId });
-          
-          const imgFormData = new FormData();
-          imgFormData.append('game', gameId);
-          imgFormData.append('image', selectedImages[i]);
-          
-          await AuthApiClient.post('/api/game-images/', imgFormData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          });
+        toast.loading(`Optimizing and uploading ${selectedImages.length} images...`, {
+          id: toastId,
+          style: darkToastStyle,
+        });
+
+        const compressedFiles = await Promise.all(selectedImages.map(compressImage));
+
+        await Promise.all(
+          compressedFiles.map((file) => {
+            const imgFormData = new FormData();
+            imgFormData.append('game', gameId);
+            imgFormData.append('image', file);
+            return AuthApiClient.post('/api/game-images/', imgFormData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            });
+          })
+        );
+      }
+
+      await fetchGames();
+
+      toast.success(isEditing ? "Game updated successfully!" : "Game created successfully!", {
+        id: toastId,
+        style: darkToastStyle,
+      });
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Backend error response:", error.response?.data || error);
+
+      let errorMessage = "Process failed. Check your inputs.";
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') {
+          errorMessage = data;
+        } else if (Array.isArray(data)) {
+          errorMessage = data.join(', ');
+        } else if (typeof data === 'object') {
+          errorMessage = Object.entries(data)
+            .map(([field, err]) => `${field}: ${Array.isArray(err) ? err.join(' ') : err}`)
+            .join(' | ');
         }
       }
 
-      if (videoFile) {
-        toast.loading("Uploading video asset...", { id: toastId });
-        const vidFormData = new FormData();
-        vidFormData.append('video', videoFile);
-        await AuthApiClient.patch(`/api/games/${gameId}/`, vidFormData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-      }
-
-      const refreshed = await ApiClient.get(`/games/?page=${page}`);
-      setGames(refreshed.data.results || refreshed.data);
-
-      toast.success(isEditing ? "Game updated successfully!" : "Game created successfully!", { id: toastId });
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error in submission workflow:", error);
-      toast.error("Process failed. Check your inputs and try again.", { id: toastId });
+      toast.error(errorMessage, { id: toastId, duration: 6000, style: darkToastStyle });
     } finally {
       setIsSubmitting(false);
     }
@@ -492,26 +606,52 @@ export default function DashGames() {
             background: #2ecc71;
             cursor: pointer;
           }
+
+          div[data-toaster] div,
+          div[role="status"] {
+            background-color: #18181c !important;
+            color: #ffffff !important;
+            border-color: #27272a !important;
+          }
+          div[role="status"] > div {
+            color: #ffffff !important;
+          }
         `}
       </style>
-      
+
       <Toaster 
         position="top-center" 
         toastOptions={{ 
-          style: { 
-            background: '#333', 
-            color: '#fff', 
-            borderRadius: '10px' 
-          },
+          duration: 4000,
+          className: '!bg-[#18181c] !text-white !border !border-[#27272a] !shadow-2xl',
+          style: darkToastStyle,
           success: {
+            className: '!bg-[#18181c] !text-white !border !border-[#27272a]',
+            style: darkToastStyle,
             iconTheme: {
               primary: '#2ecc71',
-              secondary: '#333',
+              secondary: '#18181c',
             },
-          }
+          },
+          error: {
+            className: '!bg-[#18181c] !text-white !border !border-[#27272a]',
+            style: darkToastStyle,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#18181c',
+            },
+          },
+          loading: {
+            className: '!bg-[#18181c] !text-white !border !border-[#27272a]',
+            style: darkToastStyle,
+            iconTheme: {
+              primary: '#2ecc71',
+              secondary: '#18181c',
+            },
+          },
         }} 
       />
-      
+
       <div ref={topRef} className="w-full max-w-[1600px] mx-auto space-y-4 sm:space-y-6 md:space-y-8 relative pt-2 sm:pt-4 md:pt-8">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -529,42 +669,6 @@ export default function DashGames() {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Danger / Warning Tooltip for Vercel Payload Limits */}
-              <div 
-                className="relative flex items-center justify-center" 
-                ref={warningRef}
-              >
-                <button
-                  type="button"
-                  onClick={() => setShowWarning(!showWarning)}
-                  className="cursor-pointer p-1"
-                  aria-label="Upload Warning"
-                >
-                  <FaTriangleExclamation className="text-red-500 hover:text-red-400 transition-colors text-xl sm:text-2xl animate-pulse" />
-                </button>
-
-                <AnimatePresence>
-                  {showWarning && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute -right-24 sm:right-0 top-full mt-3 w-72 max-w-[calc(100vw-2rem)] p-4 bg-[#1a1a1a] border border-red-500/30 rounded-xl text-xs text-zinc-300 shadow-2xl z-50 pointer-events-auto"
-                    >
-                      <span className="text-red-400 font-extrabold block mb-2 text-sm">Deployment Limitation</span>
-                      <p className="mb-2">Due to Vercel's 4.5MB payload limit, assets are currently uploaded sequentially. In a real production environment, this operates as a seamless bulk upload.</p>
-                      <p className="text-zinc-400 mt-2">
-                        <strong className="text-amber-400">Risk:</strong> Uploads might timeout or partially fail if file sizes are too large.
-                      </p>
-                      <p className="text-zinc-400 mt-1">
-                        <strong className="text-emerald-400">Fix:</strong> If creation stalls, delete the incomplete game entry and try again with smaller or compressed files.
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
               <motion.button
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
@@ -578,13 +682,13 @@ export default function DashGames() {
                 disabled={isSubmitting}
                 className={`px-4 sm:px-5 py-2.5 font-extrabold rounded-xl border flex items-center justify-center gap-2 text-xs sm:text-sm transition-all shadow-md shrink-0 cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed ${
                   isModalOpen && !isEditing 
-                    ? 'bg-[#333] hover:bg-[#ff6b6b] text-gray-200 hover:text-black border-[#444] hover:border-[#ff6b6b]'
-                    : 'bg-[#1c1c1c] hover:bg-[#2ecc71] text-gray-200 hover:text-black border-[#2a2a2a] hover:border-[#2ecc71]'
+                    ? 'bg-[#18181c] hover:bg-[#ef4444] text-gray-200 hover:text-white border-[#27272a] hover:border-[#ef4444]'
+                    : 'bg-[#18181c] hover:bg-[#2ecc71] text-gray-200 hover:text-black border-[#27272a] hover:border-[#2ecc71]'
                 }`}
               >
                 {isModalOpen && !isEditing ? (
                   <>
-                    <FaXmark className="text-xs text-gray-300 group-hover:text-black transition-colors" />
+                    <FaXmark className="text-xs text-gray-300 group-hover:text-white transition-colors" />
                     <span>Cancel</span>
                   </>
                 ) : (
@@ -597,7 +701,7 @@ export default function DashGames() {
             </div>
           </div>
 
-          {/* Expandable Form Container */}
+          {/* Form Container */}
           <AnimatePresence>
             {isModalOpen && (
               <motion.div
@@ -607,9 +711,8 @@ export default function DashGames() {
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                 className="overflow-hidden"
               >
-                <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl w-full p-4 sm:p-6 shadow-xl relative mt-2 sm:mt-4 space-y-6">
-                  
-                  <div className="flex items-center justify-between border-b border-[#2a2a2a] pb-4">
+                <div className="bg-[#18181c] border border-[#27272a] rounded-2xl w-full p-4 sm:p-6 shadow-2xl relative mt-2 sm:mt-4 space-y-6">
+                  <div className="flex items-center justify-between border-b border-[#27272a] pb-4">
                     <h2 className="text-lg font-black text-white">
                       {isEditing ? 'Edit Game' : 'Add New Game'}
                     </h2>
@@ -634,7 +737,7 @@ export default function DashGames() {
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
                           placeholder="e.g. Cyberpunk 2077"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                       </div>
 
@@ -649,7 +752,7 @@ export default function DashGames() {
                           value={price}
                           onChange={(e) => setPrice(e.target.value)}
                           placeholder="59.99"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                       </div>
                     </div>
@@ -665,18 +768,19 @@ export default function DashGames() {
                           disabled={isSubmitting}
                           value={discount}
                           onChange={(e) => setDiscount(e.target.value)}
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-zinc-300">Category</label>
+                        <label className="text-xs font-bold text-zinc-300">Category *</label>
                         <div className="relative">
                           <select
                             value={category}
+                            required
                             disabled={isSubmitting}
                             onChange={(e) => setCategory(e.target.value)}
-                            className="w-full appearance-none bg-[#121212] border border-[#333] rounded-xl px-3 py-2 pr-8 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 cursor-pointer transition-colors"
+                            className="w-full appearance-none bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 pr-8 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 cursor-pointer transition-colors"
                           >
                             <option value="">Select Category</option>
                             {categories.map(cat => (
@@ -688,13 +792,14 @@ export default function DashGames() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-zinc-300">Studio</label>
+                        <label className="text-xs font-bold text-zinc-300">Studio *</label>
                         <div className="relative">
                           <select
                             value={studio}
+                            required
                             disabled={isSubmitting}
                             onChange={(e) => setStudio(e.target.value)}
-                            className="w-full appearance-none bg-[#121212] border border-[#333] rounded-xl px-3 py-2 pr-8 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 cursor-pointer transition-colors"
+                            className="w-full appearance-none bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 pr-8 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 cursor-pointer transition-colors"
                           >
                             <option value="">Select Studio</option>
                             {studios.map(s => (
@@ -715,7 +820,7 @@ export default function DashGames() {
                           value={developer}
                           onChange={(e) => setDeveloper(e.target.value)}
                           placeholder="e.g. Ubisoft, Rockstar"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -726,7 +831,7 @@ export default function DashGames() {
                           value={platforms}
                           onChange={(e) => setPlatforms(e.target.value)}
                           placeholder="Example: PC, PS5, Xbox Series X"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                       </div>
                     </div>
@@ -739,11 +844,11 @@ export default function DashGames() {
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Enter detailed game plot and gameplay features..."
-                        className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] resize-none disabled:opacity-50 transition-colors"
+                        className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] resize-none disabled:opacity-50 transition-colors"
                       />
                     </div>
 
-                    <div className="space-y-3 pt-2 border-t border-[#2a2a2a]">
+                    <div className="space-y-3 pt-2 border-t border-[#27272a]">
                       <label className="text-xs font-bold text-zinc-300">System Requirements</label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <input
@@ -752,7 +857,7 @@ export default function DashGames() {
                           value={sysReqs.os}
                           onChange={(e) => handleSysReqChange('os', e.target.value)}
                           placeholder="OS (e.g. Windows 11)"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                         <input
                           type="text"
@@ -760,7 +865,7 @@ export default function DashGames() {
                           value={sysReqs.processor}
                           onChange={(e) => handleSysReqChange('processor', e.target.value)}
                           placeholder="Processor (e.g. Intel Core i5)"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                         <input
                           type="text"
@@ -768,7 +873,7 @@ export default function DashGames() {
                           value={sysReqs.memory}
                           onChange={(e) => handleSysReqChange('memory', e.target.value)}
                           placeholder="Memory (e.g. 16 GB RAM)"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                         <input
                           type="text"
@@ -776,7 +881,7 @@ export default function DashGames() {
                           value={sysReqs.graphics}
                           onChange={(e) => handleSysReqChange('graphics', e.target.value)}
                           placeholder="Graphics (e.g. NVIDIA RTX 3060)"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                         <input
                           type="text"
@@ -784,7 +889,7 @@ export default function DashGames() {
                           value={sysReqs.storage}
                           onChange={(e) => handleSysReqChange('storage', e.target.value)}
                           placeholder="Storage (e.g. 80 GB)"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                         <input
                           type="text"
@@ -792,26 +897,43 @@ export default function DashGames() {
                           value={sysReqs.directx}
                           onChange={(e) => handleSysReqChange('directx', e.target.value)}
                           placeholder="DirectX (e.g. Version 12)"
-                          className="w-full bg-[#121212] border border-[#333] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
+                          className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2">
-                      <input
-                        type="checkbox"
-                        id="activeStatus"
-                        disabled={isSubmitting}
-                        checked={active}
-                        onChange={(e) => setActive(e.target.checked)}
-                        className="w-4 h-4 accent-emerald-500 rounded cursor-pointer disabled:opacity-50"
-                      />
-                      <label htmlFor="activeStatus" className="text-xs font-bold text-zinc-300 cursor-pointer">
-                        Active (Available in store)
-                      </label>
+                    {/* Toggle Switch for Availability Status */}
+                    <div className="flex flex-col gap-1.5 pt-2 border-t border-[#27272a]">
+                      <label className="text-xs font-bold text-zinc-300">Store Status</label>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => setActive(!active)}
+                          className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors duration-300 cursor-pointer disabled:opacity-50 ${
+                            active ? 'bg-[#2ecc71]' : 'bg-cyan-500'
+                          }`}
+                        >
+                          <motion.div
+                            layout
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            className={`w-6 h-6 bg-black rounded-full shadow-md transform ${
+                              active ? 'translate-x-0' : 'translate-x-6'
+                            }`}
+                          />
+                        </button>
+                        <span className={`text-xs font-extrabold px-3 py-1 rounded-lg border ${
+                          active 
+                            ? 'bg-emerald-950/60 text-emerald-400 border-emerald-700/50' 
+                            : 'bg-cyan-950/60 text-cyan-400 border-cyan-700/50'
+                        }`}>
+                          {active ? 'Available in store' : 'Coming soon'}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-[#2a2a2a]">
+                    {/* Game Images Section */}
+                    <div className="space-y-2 pt-2 border-t border-[#27272a]">
                       <label className="text-xs font-bold text-zinc-300 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                         <span>Game Images (Max 4 allowed)</span>
                         <span className="text-[10px] text-zinc-400">
@@ -819,19 +941,19 @@ export default function DashGames() {
                         </span>
                       </label>
                       <p className="text-[11px] text-zinc-400 mb-2">
-                        Tip: Use <span className="text-[#2ecc71] font-bold">.webp</span> format for high quality and faster loading.
+                        Files are auto-optimized before upload for fast loading.
                       </p>
 
                       {isEditing && existingImages.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-2">
                           {existingImages.map(imgObj => (
-                            <div key={imgObj.id} className="relative w-20 h-16 rounded-lg overflow-hidden border border-[#333] bg-[#111]">
+                            <div key={imgObj.id} className="relative w-20 h-16 rounded-lg overflow-hidden border border-[#27272a] bg-[#111]">
                               <img src={imgObj.image} alt="Game preview" className="w-full h-full object-cover" />
                               <button
                                 type="button"
                                 disabled={isSubmitting}
                                 onClick={() => removeExistingImage(imgObj.id)}
-                                className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 text-[10px] hover:bg-rose-700 cursor-pointer disabled:opacity-50"
+                                className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-[10px] hover:bg-red-700 cursor-pointer disabled:opacity-50"
                                 title="Delete saved image"
                               >
                                 <FaXmark />
@@ -850,7 +972,7 @@ export default function DashGames() {
                                 type="button"
                                 disabled={isSubmitting}
                                 onClick={() => removeSelectedImage(idx)}
-                                className="absolute top-1 right-1 bg-rose-600 text-white rounded-full p-1 text-[10px] hover:bg-rose-700 cursor-pointer disabled:opacity-50"
+                                className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 text-[10px] hover:bg-red-700 cursor-pointer disabled:opacity-50"
                               >
                                 <FaXmark />
                               </button>
@@ -860,7 +982,7 @@ export default function DashGames() {
                       )}
 
                       {(existingImages.length + selectedImages.length) < 4 && (
-                        <label className={`flex flex-col items-center justify-center border-2 border-dashed border-[#333] hover:border-[#2ecc71]/50 rounded-xl p-4 transition-colors bg-[#121212] ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <label className={`flex flex-col items-center justify-center border-2 border-dashed border-[#27272a] hover:border-[#2ecc71]/50 rounded-xl p-4 transition-colors bg-[#121212] ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                           <FaImage className="w-5 h-5 text-zinc-400 mb-1" />
                           <span className="text-xs font-semibold text-zinc-300">Click to upload screenshot</span>
                           <input 
@@ -875,35 +997,31 @@ export default function DashGames() {
                       )}
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-[#2a2a2a]">
-                      <label className="text-xs font-bold text-zinc-300 flex items-center justify-between">
-                        <span className="flex items-center gap-1.5">
-                          <FaVideo className="text-[#2ecc71]" />
-                          <span>Game Trailer / Video Asset</span>
-                        </span>
-                        <span className="text-[10px] text-zinc-400">Max 4MB</span>
+                    {/* Video URL Input Section */}
+                    <div className="space-y-1.5 pt-2 border-t border-[#27272a]">
+                      <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                        <FaVideo className="text-[#2ecc71]" />
+                        <span>Game Trailer / Video URL</span>
                       </label>
-                      <input 
-                        type="file" 
-                        accept="video/webm,video/mp4,video/*" 
-                        onChange={handleVideoChange}
+                      <input
+                        type="url"
                         disabled={isSubmitting}
-                        className="w-full bg-[#121212] border border-[#333] rounded-xl p-2 text-xs text-zinc-300 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#1a1a1a] file:text-white hover:file:bg-[#2a2a2a] cursor-pointer disabled:opacity-50 transition-colors"
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=... or Vimeo / direct MP4 link"
+                        className="w-full bg-[#121212] border border-[#27272a] rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-[#2ecc71] disabled:opacity-50 transition-colors"
                       />
                       <p className="text-[11px] text-zinc-400">
-                        Tip: Use <span className="text-[#2ecc71] font-bold">.webm</span> format for higher quality at much smaller file sizes.
+                        Paste any link from <span className="text-[#2ecc71] font-bold">YouTube</span>, <span className="text-[#2ecc71] font-bold">Vimeo</span>, or a direct <span className="text-[#2ecc71] font-bold">Cloudinary/MP4</span> file.
                       </p>
-                      {videoFile && (
-                        <p className="text-[11px] text-[#2ecc71] font-medium">Selected video: {videoFile.name} ({(videoFile.size / (1024 * 1024)).toFixed(2)} MB)</p>
-                      )}
                     </div>
 
-                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2a2a2a]">
+                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#27272a]">
                       <button
                         type="button"
                         onClick={() => setIsModalOpen(false)}
                         disabled={isSubmitting}
-                        className="px-4 py-2 bg-[#121212] border border-[#333] hover:bg-[#2a2a2a] text-zinc-300 text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                        className="px-4 py-2 bg-[#121212] border border-[#27272a] hover:bg-[#202025] text-zinc-300 text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
                       >
                         Cancel
                       </button>
@@ -916,18 +1034,15 @@ export default function DashGames() {
                         <span>{isEditing ? 'Save Changes' : 'Create Game'}</span>
                       </button>
                     </div>
-
                   </form>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Advanced Filters Section */}
-          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-lg">
+          {/* Filters Section */}
+          <div className="bg-[#18181c] border border-[#27272a] rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-lg">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-              
-              {/* Search */}
               <div className="relative col-span-1 lg:col-span-2">
                 <FaMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
                 <input
@@ -935,16 +1050,15 @@ export default function DashGames() {
                   placeholder="Search games by name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-[#121212] border border-[#333] rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2ecc71] transition-colors"
+                  className="w-full pl-9 pr-4 py-2 bg-[#121212] border border-[#27272a] rounded-xl text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2ecc71] transition-colors"
                 />
               </div>
 
-              {/* Category */}
               <div className="relative">
                 <select 
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full appearance-none bg-[#121212] border border-[#333] text-zinc-200 text-xs sm:text-sm rounded-xl px-3 sm:px-4 py-2 pr-8 focus:outline-none focus:border-[#2ecc71] cursor-pointer font-medium"
+                  className="w-full appearance-none bg-[#121212] border border-[#27272a] text-zinc-200 text-xs sm:text-sm rounded-xl px-3 sm:px-4 py-2 pr-8 focus:outline-none focus:border-[#2ecc71] cursor-pointer font-medium"
                 >
                   <option value="All">Category (All)</option>
                   {categories.map(cat => (
@@ -954,12 +1068,11 @@ export default function DashGames() {
                 <FaChevronDown className="w-3 h-3 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
 
-              {/* Studio */}
               <div className="relative">
                 <select 
                   value={selectedStudio}
                   onChange={(e) => setSelectedStudio(e.target.value)}
-                  className="w-full appearance-none bg-[#121212] border border-[#333] text-zinc-200 text-xs sm:text-sm rounded-xl px-3 sm:px-4 py-2 pr-8 focus:outline-none focus:border-[#2ecc71] cursor-pointer font-medium"
+                  className="w-full appearance-none bg-[#121212] border border-[#27272a] text-zinc-200 text-xs sm:text-sm rounded-xl px-3 sm:px-4 py-2 pr-8 focus:outline-none focus:border-[#2ecc71] cursor-pointer font-medium"
                 >
                   <option value="All">Studio (All)</option>
                   {studios.map(studio => (
@@ -969,12 +1082,11 @@ export default function DashGames() {
                 <FaChevronDown className="w-3 h-3 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
 
-              {/* Availability */}
               <div className="relative">
                 <select 
                   value={selectedAvailability}
                   onChange={(e) => setSelectedAvailability(e.target.value)}
-                  className="w-full appearance-none bg-[#121212] border border-[#333] text-zinc-200 text-xs sm:text-sm rounded-xl px-3 sm:px-4 py-2 pr-8 focus:outline-none focus:border-[#2ecc71] cursor-pointer font-medium"
+                  className="w-full appearance-none bg-[#121212] border border-[#27272a] text-zinc-200 text-xs sm:text-sm rounded-xl px-3 sm:px-4 py-2 pr-8 focus:outline-none focus:border-[#2ecc71] cursor-pointer font-medium"
                 >
                   <option value="All">Availability (All)</option>
                   <option value="Available">Available</option>
@@ -984,9 +1096,7 @@ export default function DashGames() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4 pt-2 border-t border-[#2a2a2a]">
-              
-              {/* Price Range */}
+            <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4 pt-2 border-t border-[#27272a]">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-2/3">
                 <span className="text-xs font-bold text-zinc-400">Price Range:</span>
                 <div className="flex items-center gap-2">
@@ -994,19 +1104,18 @@ export default function DashGames() {
                     type="number" 
                     value={minPrice}
                     onChange={handleMinChange}
-                    className="w-20 bg-[#121212] border border-[#333] text-white text-xs font-bold rounded-lg py-1.5 px-2 text-center outline-none focus:border-[#2ecc71]"
+                    className="w-20 bg-[#121212] border border-[#27272a] text-white text-xs font-bold rounded-lg py-1.5 px-2 text-center outline-none focus:border-[#2ecc71]"
                   />
                   <span className="text-zinc-500">-</span>
                   <input 
                     type="number" 
                     value={maxPrice}
                     onChange={handleMaxChange}
-                    className="w-20 bg-[#121212] border border-[#333] text-white text-xs font-bold rounded-lg py-1.5 px-2 text-center outline-none focus:border-[#2ecc71]"
+                    className="w-20 bg-[#121212] border border-[#27272a] text-white text-xs font-bold rounded-lg py-1.5 px-2 text-center outline-none focus:border-[#2ecc71]"
                   />
                 </div>
-                {/* Range Slider */}
-                <div className="relative h-4 w-full sm:max-w-[200px]">
-                  <div className="absolute top-1/2 left-0 w-full h-1 bg-[#333] -translate-y-1/2 rounded-full"></div>
+                <div className="relative h-4 w-full sm:max-w-50">
+                  <div className="absolute top-1/2 left-0 w-full h-1 bg-[#27272a] -translate-y-1/2 rounded-full"></div>
                   <div 
                     className="absolute top-1/2 h-1 bg-[#2ecc71] -translate-y-1/2 rounded-full pointer-events-none"
                     style={{ left: `${(minPrice / 3000) * 100}%`, right: `${100 - (maxPrice / 3000) * 100}%` }}
@@ -1023,12 +1132,11 @@ export default function DashGames() {
               </div>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
-                {/* Sort */}
                 <div className="relative flex-1 sm:w-40">
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value)}
-                    className="w-full appearance-none bg-[#121212] border border-[#333] text-zinc-200 text-xs sm:text-sm rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-[#2ecc71] cursor-pointer font-medium"
+                    className="w-full appearance-none bg-[#121212] border border-[#27272a] text-zinc-200 text-xs sm:text-sm rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-[#2ecc71] cursor-pointer font-medium"
                   >
                     <option value="default">Sort: Default</option>
                     <option value="price-asc">Price: Low to High</option>
@@ -1037,41 +1145,42 @@ export default function DashGames() {
                   </select>
                   <FaChevronDown className="w-3 h-3 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-                
+
                 <button 
                   onClick={handleResetFilters}
-                  className="px-3 py-2 bg-[#2a2a2a] hover:bg-[#383838] text-white text-xs sm:text-sm font-bold rounded-xl transition-colors cursor-pointer border border-[#333]"
+                  className="px-3 py-2 bg-[#202025] hover:bg-[#27272a] text-white text-xs sm:text-sm font-bold rounded-xl transition-colors cursor-pointer border border-[#27272a]"
                 >
                   Reset
                 </button>
               </div>
-
             </div>
           </div>
 
+          {/* Games Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-4 relative z-10">
             {isLoading ? (
               [...Array(8)].map((_, index) => (
-                <div key={`skeleton-${index}`} className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl p-3 flex flex-col justify-between h-[280px] shadow-lg">
+                <div key={`skeleton-${index}`} className="bg-[#18181c] border border-[#27272a] rounded-2xl p-3 flex flex-col justify-between h-75 shadow-lg">
                   <div className="animate-pulse flex flex-col h-full">
-                    <div className="aspect-[16/10] w-full rounded-xl bg-[#2a2a2a] mb-2.5"></div>
-                    <div className="h-4 bg-[#2a2a2a] rounded w-3/4 mb-1.5"></div>
-                    <div className="h-3 bg-[#2a2a2a] rounded w-full mb-1"></div>
-                    <div className="h-3 bg-[#2a2a2a] rounded w-5/6 mb-3"></div>
-                    
-                    <div className="mt-auto pt-2.5 border-t border-[#2a2a2a] space-y-2">
+                    <div className="aspect-16/10 w-full rounded-xl bg-[#27272a] mb-2.5"></div>
+                    <div className="h-4 bg-[#27272a] rounded w-3/4 mb-1.5"></div>
+                    <div className="h-3 bg-[#27272a] rounded w-full mb-1"></div>
+                    <div className="h-3 bg-[#27272a] rounded w-5/6 mb-3"></div>
+
+                    <div className="mt-auto pt-2.5 border-t border-[#27272a] space-y-2">
                       <div className="flex justify-between">
-                        <div className="h-3 bg-[#2a2a2a] rounded w-8"></div>
-                        <div className="h-3 bg-[#2a2a2a] rounded w-12"></div>
+                        <div className="h-3 bg-[#27272a] rounded w-8"></div>
+                        <div className="h-3 bg-[#27272a] rounded w-12"></div>
                       </div>
                       <div className="flex justify-between">
-                        <div className="h-3 bg-[#2a2a2a] rounded w-10"></div>
-                        <div className="h-3 bg-[#2a2a2a] rounded w-8"></div>
+                        <div className="h-3 bg-[#27272a] rounded w-10"></div>
+                        <div className="h-3 bg-[#27272a] rounded w-8"></div>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5 mt-3 pt-2 border-t border-[#2a2a2a]">
-                      <div className="h-7 bg-[#2a2a2a] rounded-lg"></div>
-                      <div className="h-7 bg-[#2a2a2a] rounded-lg"></div>
+                    <div className="grid grid-cols-3 gap-1.5 mt-3 pt-2 border-t border-[#27272a]">
+                      <div className="h-7 bg-[#27272a] rounded-lg"></div>
+                      <div className="h-7 bg-[#27272a] rounded-lg"></div>
+                      <div className="h-7 bg-[#27272a] rounded-lg"></div>
                     </div>
                   </div>
                 </div>
@@ -1093,15 +1202,25 @@ export default function DashGames() {
                     exit={{ opacity: 0, scale: 0.96 }}
                     transition={{ duration: 0.3 }}
                     key={game.id} 
-                    className="bg-[#1c1c1c] border border-[#2a2a2a] hover:border-[#383838] rounded-2xl p-3 flex flex-col justify-between transition-all duration-200 shadow-lg group"
+                    className="bg-[#18181c] border border-[#27272a] hover:border-[#383838] rounded-2xl p-3 flex flex-col justify-between transition-all duration-200 shadow-lg group"
                   >
                     <div>
-                      <div className="relative aspect-[16/10] w-full rounded-xl overflow-hidden mb-2.5 bg-[#121212] border border-[#333]">
+                      {/* Clickable Card Media */}
+                      <Link 
+                        to={`/product/${game.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block relative aspect-16/10 w-full rounded-xl overflow-hidden mb-2.5 bg-[#121212] border border-[#27272a] group/thumb"
+                        title="View game page"
+                      >
                         <img 
                           src={coverImage} 
                           alt={game.title} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
                         />
+                        <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/30 transition-colors flex items-center justify-center">
+                          <FaArrowUpRightFromSquare className="text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity w-4 h-4 drop-shadow" />
+                        </div>
                         {hasDiscount && !isComingSoon && (
                           <span className="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-md border bg-emerald-950/80 text-emerald-300 border-emerald-700/60">
                             Sale
@@ -1112,19 +1231,26 @@ export default function DashGames() {
                             Upcoming
                           </span>
                         )}
-                      </div>
+                      </Link>
 
-                      <h3 className="font-extrabold text-sm text-white truncate" title={game.title}>
+                      {/* Clickable Title */}
+                      <Link
+                        to={`/product/${game.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block font-extrabold text-sm text-white hover:text-[#2ecc71] transition-colors truncate"
+                        title={game.title}
+                      >
                         {game.title}
-                      </h3>
+                      </Link>
 
-                      <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed min-h-[32px]">
+                      <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed min-h-8">
                         {game.description || 'No description provided.'}
                       </p>
 
-                      <div className="mt-3 pt-2.5 border-t border-[#2a2a2a] space-y-1.5 text-xs">
+                      <div className="mt-3 pt-2.5 border-t border-[#27272a] space-y-1.5 text-xs">
                         <div className="flex justify-between items-start gap-2">
-                          <span className="text-zinc-500 font-medium text-[11px] shrink-0 pt-[2px]">Price:</span>
+                          <span className="text-zinc-500 font-medium text-[11px] shrink-0 pt-0.5">Price:</span>
                           {isComingSoon ? (
                             <span className="text-cyan-400 font-bold text-[11px] text-right">Available soon</span>
                           ) : hasDiscount ? (
@@ -1136,32 +1262,44 @@ export default function DashGames() {
                             <span className="font-extrabold text-white text-[11px] text-right">৳{originalPrice.toFixed(2)}</span>
                           )}
                         </div>
-                        
+
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-zinc-500 font-medium text-[11px]">Rating:</span>
-                          <span className="font-semibold text-zinc-300 text-[11px] bg-[#121212] px-1.5 py-0.5 rounded border border-[#333]">
+                          <span className="font-semibold text-zinc-300 text-[11px] bg-[#121212] px-1.5 py-0.5 rounded border border-[#27272a]">
                             {game.rating ?? 'N/A'} ★
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-1.5 mt-3 pt-2 border-t border-[#2a2a2a]">
+                    {/* Action Buttons: View, Edit, Delete */}
+                    <div className="grid grid-cols-3 gap-1.5 mt-3 pt-2 border-t border-[#27272a]">
+                      <Link
+                        to={`/product/${game.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1 py-1.5 sm:py-2 bg-[#121212] hover:bg-[#202025] text-zinc-200 border border-[#27272a] hover:border-[#383838] text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                        title="Open product page"
+                      >
+                        <FaArrowUpRightFromSquare className="w-3 h-3 text-cyan-400" />
+                        <span className="hidden sm:inline">View</span>
+                      </Link>
+
                       <button 
                         onClick={() => handleOpenEditModal(game)}
-                        className="inline-flex items-center justify-center gap-1.5 py-1.5 sm:py-2 bg-[#121212] hover:bg-[#202025] text-zinc-200 border border-[#333] hover:border-[#444] text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1 py-1.5 sm:py-2 bg-[#121212] hover:bg-[#202025] text-zinc-200 border border-[#27272a] hover:border-[#383838] text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
                         title="Edit Game"
                       >
-                        <FaPenToSquare className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-emerald-400" />
+                        <FaPenToSquare className="w-3 h-3 text-emerald-400" />
                         <span className="hidden sm:inline">Edit</span>
                       </button>
 
                       <button 
                         onClick={() => confirmDelete(game.id)}
-                        className="inline-flex items-center justify-center gap-1.5 py-1.5 sm:py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 hover:border-red-500 text-[11px] font-semibold rounded-lg transition-all duration-300 cursor-pointer"
+                        className="inline-flex items-center justify-center gap-1 py-1.5 sm:py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/30 hover:border-red-500 text-[11px] font-semibold rounded-lg transition-all duration-300 cursor-pointer"
                         title="Delete Game"
                       >
-                        <FaTrashCan className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
+                        <FaTrashCan className="w-3 h-3" />
                         <span className="hidden sm:inline">Delete</span>
                       </button>
                     </div>
@@ -1169,21 +1307,22 @@ export default function DashGames() {
                 );
               })
             ) : (
-              <div className="col-span-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-2xl py-12 text-center text-zinc-500 text-xs sm:text-sm shadow-lg">
+              <div className="col-span-full bg-[#18181c] border border-[#27272a] rounded-2xl py-12 text-center text-zinc-500 text-xs sm:text-sm shadow-lg">
                 No games found matching your search or filters.
               </div>
             )}
           </div>
 
+          {/* Pagination Controls */}
           <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 pt-4 pb-2">
             <button
               onClick={handlePrevPage}
               disabled={page === 1 || isLoading}
-              className="w-full sm:w-auto px-4 py-2 bg-[#1c1c1c] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:hover:bg-[#1c1c1c] text-gray-300 text-xs font-extrabold rounded-xl border border-[#2a2a2a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
+              className="w-full sm:w-auto px-4 py-2 bg-[#18181c] hover:bg-[#202025] disabled:opacity-40 disabled:hover:bg-[#18181c] text-gray-300 text-xs font-extrabold rounded-xl border border-[#27272a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
             >
               <FaChevronLeft className="text-[10px]" /> Previous
             </button>
-            
+
             <span className="text-xs text-gray-400 font-semibold text-center whitespace-nowrap">
               Page <span className="text-white font-bold">{page}</span>
             </span>
@@ -1191,7 +1330,7 @@ export default function DashGames() {
             <button
               onClick={handleNextPage}
               disabled={!hasNext || isLoading}
-              className="w-full sm:w-auto px-4 py-2 bg-[#1c1c1c] hover:bg-[#2a2a2a] disabled:opacity-40 disabled:hover:bg-[#1c1c1c] text-gray-300 text-xs font-extrabold rounded-xl border border-[#2a2a2a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
+              className="w-full sm:w-auto px-4 py-2 bg-[#18181c] hover:bg-[#202025] disabled:opacity-40 disabled:hover:bg-[#18181c] text-gray-300 text-xs font-extrabold rounded-xl border border-[#27272a] flex items-center justify-center gap-2 transition cursor-pointer disabled:cursor-not-allowed shadow-md"
             >
               Next <FaChevronRight className="text-[10px]" />
             </button>

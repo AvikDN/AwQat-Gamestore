@@ -9,6 +9,59 @@ import apiClient from '../services/api-client';
 import AuthApiClient from '../services/auth-api-client';
 import { useCartContext } from '../contexts/CartContext';
 
+/*
+ * =========================================================
+ * UNIVERSAL VIDEO PARSER
+ * =========================================================
+ */
+const parseVideoSource = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  const raw = url.trim();
+  if (!raw) return null;
+
+  // 1. YouTube URLs
+  const ytMatch = raw.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
+  );
+  if (ytMatch) {
+    const id = ytMatch[1];
+    return {
+      type: 'iframe',
+      src: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1`,
+      thumbnail: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
+    };
+  }
+
+  // 2. Vimeo URLs
+  const vimeoMatch = raw.match(/(?:vimeo\.com\/)(\d+)/);
+  if (vimeoMatch) {
+    const id = vimeoMatch[1];
+    return {
+      type: 'iframe',
+      src: `https://player.vimeo.com/video/${id}?autoplay=1&muted=1`,
+      thumbnail: null,
+    };
+  }
+
+  // 3. Direct Video Files (Cloudinary, AWS S3, MP4/WebM)
+  let cleanUrl = raw.replace(/^http:\/\//i, 'https://');
+
+  if (cleanUrl.includes('cloudinary.com')) {
+    cleanUrl = cleanUrl.replace('/image/upload/', '/video/upload/');
+    const hasExtension = /\.(mp4|webm|ogv|mov|m4v)(\?.*)?$/i.test(cleanUrl);
+    if (!hasExtension) {
+      const [base, query] = cleanUrl.split('?');
+      cleanUrl = `${base}.mp4${query ? `?${query}` : ''}`;
+    }
+  }
+
+  return {
+    type: 'video',
+    src: cleanUrl,
+    thumbnail: null,
+  };
+};
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -35,18 +88,18 @@ export default function ProductDetails() {
   const [activeMedia, setActiveMedia] = useState({ type: 'image', url: '' });
 
   // Mobile Tabs State
-  const [activeTab, setActiveTab] = useState('purchase'); // 'purchase', 'sysreq', 'reviews'
+  const [activeTab, setActiveTab] = useState('purchase');
 
   // Current User State & Purchase Verification
   const [currentUser, setCurrentUser] = useState(null);
   const [hasPurchased, setHasPurchased] = useState(false);
 
-  // Review Form States (Default 4 Stars)
+  // Review Form States
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(4);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // Edit Review States (Default 4 Stars)
+  // Edit Review States
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [editReviewText, setEditReviewText] = useState('');
   const [editReviewRating, setEditReviewRating] = useState(4);
@@ -56,8 +109,7 @@ export default function ProductDetails() {
 
   useEffect(() => {
     setLoading(true);
-    
-    // Fetch product, reviews, and current user profile simultaneously
+
     Promise.allSettled([
       apiClient.get(`/games/${id}/`),
       apiClient.get(`/games/${id}/reviews/`),
@@ -73,7 +125,7 @@ export default function ProductDetails() {
             setActiveMedia({ type: 'image', url: data.images[0].image });
           }
         }
-        
+
         if (reviewsRes.status === 'fulfilled') {
           setReviews(reviewsRes.value.data.results || reviewsRes.value.data || []);
         }
@@ -81,37 +133,36 @@ export default function ProductDetails() {
         if (profileRes.status === 'fulfilled') {
           setCurrentUser(profileRes.value.data);
         }
-        
+
         setLoading(false);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error("Error fetching product details:", error);
         setLoading(false);
       });
   }, [id]);
 
-  // Check Purchase Status once currentUser is loaded
   useEffect(() => {
     if (currentUser) {
       const orders = currentUser.profile?.order_history || currentUser.order_history;
-      
+
       if (orders) {
-        const purchased = orders.some(o => 
+        const purchased = orders.some((o) =>
           (o.status || o.order_status)?.toLowerCase() !== 'cancelled' &&
-          (o.items || o.games || []).some(i => String(i.game || i.game_id) === String(id))
+          (o.items || o.games || []).some((i) => String(i.game || i.game_id) === String(id))
         );
         setHasPurchased(purchased);
       } else {
         AuthApiClient.get('/api/orders/')
-          .then(res => {
+          .then((res) => {
             const allOrders = res.data.results || res.data || [];
-            const purchased = allOrders.some(o => 
+            const purchased = allOrders.some((o) =>
               o.status?.toLowerCase() !== 'cancelled' &&
-              o.items?.some(i => String(i.game) === String(id))
+              o.items?.some((i) => String(i.game) === String(id))
             );
             setHasPurchased(purchased);
           })
-          .catch(err => console.error("Could not verify purchase history:", err));
+          .catch((err) => console.error("Could not verify purchase history:", err));
       }
     }
   }, [currentUser, id]);
@@ -124,7 +175,7 @@ export default function ProductDetails() {
     setQuantity(quantity + 1);
   };
 
-  // --- Review Handlers ---
+  // Review Handlers
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!reviewText.trim()) return toast.error("Review cannot be empty.");
@@ -138,18 +189,18 @@ export default function ProductDetails() {
         text: reviewText.trim(),
         rating: reviewRating
       });
-      
+
       setReviews([response.data, ...reviews]);
       setReviewText('');
-      setReviewRating(4); 
+      setReviewRating(4);
       toast.success("Review posted successfully!", { id: toastId });
     } catch (error) {
       console.error("Review posting error:", error);
       toast.error(
-        error.response?.data?.detail || 
-        error.response?.data?.non_field_errors?.[0] || 
+        error.response?.data?.detail ||
+        error.response?.data?.non_field_errors?.[0] ||
         error.response?.data?.game?.[0] ||
-        "Failed to post review.", 
+        "Failed to post review.",
         { id: toastId }
       );
     } finally {
@@ -161,7 +212,7 @@ export default function ProductDetails() {
     const toastId = toast.loading("Deleting review...");
     try {
       await AuthApiClient.delete(`/api/reviews/${reviewId}/`);
-      setReviews(reviews.filter(r => r.id !== reviewId));
+      setReviews(reviews.filter((r) => r.id !== reviewId));
       toast.success("Review deleted.", { id: toastId });
     } catch (error) {
       console.error("Delete review error:", error);
@@ -193,7 +244,7 @@ export default function ProductDetails() {
         rating: editReviewRating
       });
 
-      setReviews(reviews.map(r => r.id === editingReviewId ? response.data : r));
+      setReviews(reviews.map((r) => (r.id === editingReviewId ? response.data : r)));
       setEditingReviewId(null);
       toast.success("Review updated!", { id: toastId });
     } catch (error) {
@@ -207,7 +258,7 @@ export default function ProductDetails() {
   if (loading) {
     return (
       <div className="bg-transparent min-h-screen w-full text-white">
-        <div className="max-w-[1400px] mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
+        <div className="max-w-350 mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-pulse">
             <div className="lg:col-span-7 flex flex-col">
               <div className="h-12 bg-[#333] rounded-xl w-3/4 mb-6"></div>
@@ -232,9 +283,9 @@ export default function ProductDetails() {
 
   if (!product) {
     return (
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="bg-transparent min-h-screen w-full flex items-center justify-center text-red-500 font-bold text-xl"
       >
         Product not found.
@@ -246,27 +297,26 @@ export default function ProductDetails() {
   const originalPrice = Number(product.price);
   const discountValue = Number(product.discount || 0);
   const hasDiscount = discountValue > 0;
-  
-  const discountPercentage = hasDiscount 
+
+  const discountPercentage = hasDiscount
     ? (discountValue <= 100 ? discountValue : Math.round((discountValue / originalPrice) * 100))
     : 0;
-  
-  const unitFinalPrice = hasDiscount 
-    ? (discountValue <= 100 ? originalPrice - (originalPrice * discountValue) / 100 : originalPrice - discountValue) 
+
+  const unitFinalPrice = hasDiscount
+    ? (discountValue <= 100 ? originalPrice - (originalPrice * discountValue) / 100 : originalPrice - discountValue)
     : originalPrice;
 
   const totalOriginalPrice = originalPrice * quantity;
   const totalPrice = unitFinalPrice * quantity;
 
-  const hasReviewed = currentUser && reviews.some(r => r.user === currentUser.username);
+  const hasReviewed = currentUser && reviews.some((r) => r.user === currentUser.username);
 
-  // --- Render Sections ---
-
+  // Render Sections
   const renderPurchasePanel = () => (
     <motion.div variants={itemVariants} className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 md:p-8 flex flex-col text-white shadow-2xl relative overflow-hidden">
       <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#2ecc71]/5 rounded-full blur-3xl pointer-events-none"></div>
       <span className="text-xl font-bold mb-1 text-gray-400 relative z-10">Purchase Panel</span>
-      
+
       {isComingSoon ? (
         <div className="flex items-baseline gap-3 mb-6 relative z-10">
           <span className="text-3xl md:text-4xl font-black tracking-tight text-cyan-400">
@@ -292,7 +342,7 @@ export default function ProductDetails() {
           )}
         </div>
       )}
-      
+
       <span className="text-sm font-bold mb-2 text-gray-400 relative z-10">Supported Platforms</span>
       <div className="flex mb-6 relative z-10">
         <span className="bg-[#2ecc71]/10 border border-[#2ecc71]/30 text-[#2ecc71] py-2 px-4 rounded-md font-bold tracking-wider">
@@ -303,10 +353,10 @@ export default function ProductDetails() {
       {!isComingSoon && (
         <>
           <div className="flex items-center gap-1.5 mb-6 relative z-10">
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={decreaseQuantity} 
+              onClick={decreaseQuantity}
               className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center cursor-pointer"
             >
               -
@@ -314,10 +364,10 @@ export default function ProductDetails() {
             <div className="w-12 h-8 bg-black border border-[#333] text-white font-bold flex items-center justify-center rounded-md">
               {quantity}
             </div>
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={increaseQuantity} 
+              onClick={increaseQuantity}
               className="w-8 h-8 bg-[#333] hover:bg-[#2ecc71] hover:text-black transition-colors text-white rounded-md font-bold flex items-center justify-center cursor-pointer"
             >
               +
@@ -325,7 +375,7 @@ export default function ProductDetails() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 relative z-10">
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => addToCart(product, quantity)}
@@ -333,7 +383,7 @@ export default function ProductDetails() {
             >
               Add to cart
             </motion.button>
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => addToCart(product, quantity)}
@@ -367,8 +417,7 @@ export default function ProductDetails() {
   const renderReviewsPanel = () => (
     <motion.div variants={itemVariants} className="w-full space-y-8">
       <h2 className="text-2xl md:text-3xl font-bold text-[#2ecc71] hidden lg:block">Customer Reviews</h2>
-      
-      {/* Write a Review Form - ONLY visible if they purchased the game */}
+
       {currentUser && hasPurchased && !hasReviewed && (
         <div className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-6 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#2ecc71]/5 blur-3xl pointer-events-none rounded-full"></div>
@@ -377,7 +426,7 @@ export default function ProductDetails() {
             <div className="mb-4">
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Rating</label>
               <div className="flex gap-1.5">
-                {[1, 2, 3, 4, 5].map(num => (
+                {[1, 2, 3, 4, 5].map((num) => (
                   <FaStar
                     key={num}
                     onClick={() => setReviewRating(num)}
@@ -407,7 +456,6 @@ export default function ProductDetails() {
         </div>
       )}
 
-      {/* Reviews List */}
       <div className="flex flex-col gap-4">
         {reviews.length > 0 ? (
           reviews.map((review) => {
@@ -416,13 +464,13 @@ export default function ProductDetails() {
             const dateObj = new Date(review.created_at || Date.now());
 
             return (
-              <div 
-                key={review.id} 
+              <div
+                key={review.id}
                 className="bg-[#1a1a1a] border border-[#333] rounded-3xl p-5 sm:p-6 flex flex-col gap-4 w-full group relative overflow-hidden transition-colors hover:border-[#2ecc71]/30"
               >
                 <div className="flex items-start justify-between gap-4 relative z-10">
                   <div className="flex items-center gap-4">
-                    <div 
+                    <div
                       className="w-11 h-11 bg-[#121212] border border-[#333] rounded-full flex items-center justify-center shrink-0 bg-cover bg-center shadow-inner"
                       style={{ backgroundImage: review.user_avatar ? `url(${review.user_avatar})` : 'none' }}
                     >
@@ -432,15 +480,15 @@ export default function ProductDetails() {
                         </span>
                       )}
                     </div>
-                    
+
                     <div className="flex flex-col">
                       <span className="text-white font-bold sm:text-lg tracking-tight">
                         {review.user}
                       </span>
-                      
+
                       {isEditing ? (
                         <div className="flex gap-1 mt-1">
-                          {[1, 2, 3, 4, 5].map(num => (
+                          {[1, 2, 3, 4, 5].map((num) => (
                             <FaStar
                               key={num}
                               onClick={() => setEditReviewRating(num)}
@@ -451,9 +499,9 @@ export default function ProductDetails() {
                       ) : (
                         <div className="flex items-center gap-1 mt-1">
                           {[...Array(5)].map((_, i) => (
-                            <FaStar 
+                            <FaStar
                               key={i}
-                              className={`w-3.5 h-3.5 ${i < review.rating ? 'text-[#2ecc71]' : 'text-[#333]'}`} 
+                              className={`w-3.5 h-3.5 ${i < review.rating ? 'text-[#2ecc71]' : 'text-[#333]'}`}
                             />
                           ))}
                         </div>
@@ -463,14 +511,14 @@ export default function ProductDetails() {
 
                   {isOwner && !isEditing && (
                     <div className="flex items-center gap-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                      <button 
+                      <button
                         onClick={() => startEditing(review)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#222] hover:bg-[#333] text-gray-300 transition-colors"
                         title="Edit Review"
                       >
                         <FaPenToSquare className="text-xs" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDeleteReview(review.id)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white transition-colors border border-rose-500/20 hover:border-transparent"
                         title="Delete Review"
@@ -480,8 +528,8 @@ export default function ProductDetails() {
                     </div>
                   )}
                 </div>
-                
-                <div className="relative z-10 pl-[60px]">
+
+                <div className="relative z-10 pl-15">
                   {isEditing ? (
                     <div className="flex flex-col gap-3">
                       <textarea
@@ -537,30 +585,28 @@ export default function ProductDetails() {
 
   return (
     <div className="bg-transparent min-h-screen w-full text-white selection:bg-[#2ecc71] selection:text-black">
-      <Toaster 
-        position="top-center" 
-        toastOptions={{ 
+      <Toaster
+        position="top-center"
+        toastOptions={{
           style: { background: '#18181c', color: '#fff', border: '1px solid #27272a', borderRadius: '12px', fontSize: '13px', fontWeight: '600' },
           success: { iconTheme: { primary: '#10b981', secondary: '#18181c' } },
           error: { iconTheme: { primary: '#f87171', secondary: '#18181c' } }
-        }} 
+        }}
       />
 
-      <div className="max-w-[1400px] mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
-        
-        <motion.div 
+      <div className="max-w-350 mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12"
         >
-          
           {/* Left Column (Desktop) / Top Section (Mobile) */}
           <div className="lg:col-span-7 flex flex-col">
             <motion.h1 variants={itemVariants} className="text-3xl md:text-5xl font-bold mb-5 md:mb-7 tracking-tight">
               {product.title}
             </motion.h1>
-            
+
             <motion.div variants={itemVariants} className="w-full aspect-video bg-[#1a1a1a] rounded-xl overflow-hidden flex items-center justify-center shadow-xl border border-transparent hover:border-[#2ecc71]/30 transition-colors relative">
               {hasDiscount && !isComingSoon && (
                 <div className="absolute top-4 right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-sm sm:text-base px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(46,204,113,0.6)]">
@@ -575,27 +621,61 @@ export default function ProductDetails() {
 
               <AnimatePresence mode="wait">
                 {activeMedia.type === 'video' && activeMedia.url ? (
-                  <motion.video 
-                    key={activeMedia.url}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="w-full h-full object-cover absolute inset-0"
-                    src={activeMedia.url} 
-                    controls
-                    autoPlay
-                    muted
-                  ></motion.video>
+                  (() => {
+                    const videoMeta = parseVideoSource(activeMedia.url);
+                    if (!videoMeta) {
+                      return <span className="text-gray-500">Invalid video format</span>;
+                    }
+
+                    if (videoMeta.type === 'iframe') {
+                      return (
+                        <motion.iframe
+                          key={videoMeta.src}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          src={videoMeta.src}
+                          title={product.title}
+                          className="w-full h-full border-0 absolute inset-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      );
+                    }
+
+                    return (
+                      <motion.video
+                        key={videoMeta.src}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="w-full h-full object-cover absolute inset-0"
+                        src={videoMeta.src}
+                        controls
+                        autoPlay
+                        muted
+                        playsInline
+                        preload="auto"
+                        ref={(node) => {
+                          if (node) {
+                            node.muted = true;
+                            node.defaultMuted = true;
+                          }
+                        }}
+                      />
+                    );
+                  })()
                 ) : activeMedia.type === 'image' && activeMedia.url ? (
-                  <motion.img 
+                  <motion.img
                     key={activeMedia.url}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    src={activeMedia.url} 
-                    alt={product.title} 
+                    src={activeMedia.url}
+                    alt={product.title}
                     className="w-full h-full object-cover absolute inset-0"
                   />
                 ) : (
@@ -604,38 +684,62 @@ export default function ProductDetails() {
               </AnimatePresence>
             </motion.div>
 
+            {/* Thumbnails Row */}
             <motion.div variants={itemVariants} className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-4 mt-2 sm:mt-4">
-              {product.video && (
-                <motion.div 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setActiveMedia({ type: 'video', url: product.video })}
-                  className={`aspect-video bg-black rounded-lg overflow-hidden relative border-2 cursor-pointer transition-colors ${activeMedia.url === product.video ? 'border-[#2ecc71]' : 'border-transparent hover:border-[#2ecc71]/50'}`}
-                >
-                  <video 
-                    className="absolute top-0 left-0 w-full h-full object-cover opacity-50 pointer-events-none"
-                    src={product.video} 
-                    muted
-                  ></video>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-white drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </div>
-                </motion.div>
-              )}
+              {product.video && (() => {
+                const videoMeta = parseVideoSource(product.video);
+                const isSelected = activeMedia.type === 'video' && activeMedia.url === product.video;
+
+                return (
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setActiveMedia({ type: 'video', url: product.video })}
+                    className={`aspect-video bg-black rounded-lg overflow-hidden relative border-2 cursor-pointer transition-colors ${
+                      isSelected ? 'border-[#2ecc71]' : 'border-transparent hover:border-[#2ecc71]/50'
+                    }`}
+                  >
+                    {videoMeta?.thumbnail ? (
+                      <img
+                        src={videoMeta.thumbnail}
+                        alt="Video thumbnail"
+                        className="absolute top-0 left-0 w-full h-full object-cover opacity-60 pointer-events-none"
+                      />
+                    ) : videoMeta?.type === 'video' ? (
+                      <video
+                        className="absolute top-0 left-0 w-full h-full object-cover opacity-50 pointer-events-none"
+                        src={videoMeta.src}
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : (
+                      <div className="absolute top-0 left-0 w-full h-full bg-[#1a1a1a] opacity-60" />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <svg className="w-8 h-8 text-white drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </motion.div>
+                );
+              })()}
 
               {product.images && product.images.map((imgObj) => (
-                <motion.div 
-                  key={imgObj.id} 
+                <motion.div
+                  key={imgObj.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveMedia({ type: 'image', url: imgObj.image })}
-                  className={`aspect-video bg-[#1a1a1a] rounded-lg overflow-hidden border-2 cursor-pointer transition-colors ${activeMedia.url === imgObj.image ? 'border-[#2ecc71]' : 'border-transparent hover:border-[#2ecc71]/50'}`}
+                  className={`aspect-video bg-[#1a1a1a] rounded-lg overflow-hidden border-2 cursor-pointer transition-colors ${
+                    activeMedia.type === 'image' && activeMedia.url === imgObj.image
+                      ? 'border-[#2ecc71]'
+                      : 'border-transparent hover:border-[#2ecc71]/50'
+                  }`}
                 >
-                  <img 
-                    src={imgObj.image} 
-                    alt="Thumbnail" 
+                  <img
+                    src={imgObj.image}
+                    alt="Thumbnail"
                     className="w-full h-full object-cover"
                   />
                 </motion.div>
@@ -644,7 +748,7 @@ export default function ProductDetails() {
 
             <motion.div variants={itemVariants} className="mt-10 md:mt-12 flex flex-col gap-4">
               <h2 className="text-2xl md:text-3xl font-bold text-[#2ecc71]">Description</h2>
-              
+
               {product.developer && (
                 <div className="flex items-center gap-2">
                   <span className="text-gray-400 font-bold">Developed By:</span>
@@ -663,7 +767,6 @@ export default function ProductDetails() {
             <div className="hidden lg:block mt-16">
               {renderReviewsPanel()}
             </div>
-            
           </div>
 
           {/* Right Column (Desktop Only) */}
@@ -675,20 +778,20 @@ export default function ProductDetails() {
           {/* Mobile Tabs Section (Mobile Only) */}
           <div className="lg:hidden col-span-1 flex flex-col mt-8">
             <div className="flex bg-[#1a1a1a] rounded-2xl p-1.5 mb-6 border border-[#333] shadow-lg sticky top-24 z-30 backdrop-blur-md bg-opacity-90">
-              <button 
-                onClick={() => setActiveTab('purchase')} 
+              <button
+                onClick={() => setActiveTab('purchase')}
                 className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-colors ${activeTab === 'purchase' ? 'bg-[#2ecc71] text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
               >
                 Purchase
               </button>
-              <button 
-                onClick={() => setActiveTab('sysreq')} 
+              <button
+                onClick={() => setActiveTab('sysreq')}
                 className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-colors ${activeTab === 'sysreq' ? 'bg-[#2ecc71] text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
               >
                 .sys
               </button>
-              <button 
-                onClick={() => setActiveTab('reviews')} 
+              <button
+                onClick={() => setActiveTab('reviews')}
                 className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-colors ${activeTab === 'reviews' ? 'bg-[#2ecc71] text-black shadow-md' : 'text-gray-400 hover:text-white'}`}
               >
                 Reviews
@@ -714,7 +817,6 @@ export default function ProductDetails() {
               </motion.div>
             </AnimatePresence>
           </div>
-          
         </motion.div>
       </div>
     </div>

@@ -145,7 +145,7 @@ export default function Reviews() {
     <section className="w-full max-w-[1920px] mx-auto py-8 md:py-16 px-3 sm:px-6 xl:px-12 relative overflow-hidden select-none">
       
       {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] md:w-[600px] h-[200px] md:h-[300px] bg-[#2ecc71]/5 blur-[100px] md:blur-[140px] pointer-events-none rounded-full" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-75 md:w-150 h-50 md:h-75 bg-[#2ecc71]/5 blur-[100px] md:blur-[140px] pointer-events-none rounded-full" />
 
       {/* Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-5 md:mb-10 gap-2 relative z-10">
@@ -211,7 +211,7 @@ export default function Reviews() {
                     layout
                     className="flex flex-col h-full bg-[#18181c] border border-[#27272a] hover:border-[#2ecc71]/40 rounded-2xl p-3 sm:p-5 shadow-lg group relative overflow-hidden transition-colors duration-300"
                   >
-                    <FaQuoteRight className="absolute right-2 bottom-2 text-4xl sm:text-6xl text-white/[0.02] pointer-events-none group-hover:text-[#2ecc71]/[0.05] transition-colors duration-300" />
+                    <FaQuoteRight className="absolute right-2 bottom-2 text-4xl sm:text-6xl text-white/2 pointer-events-none group-hover:text-[#2ecc71]/5 transition-colors duration-300" />
 
                     <motion.div layout className="flex items-center gap-2.5 mb-3 relative z-10">
                       <div
@@ -239,7 +239,7 @@ export default function Reviews() {
                       </div>
                     </motion.div>
 
-                    <motion.div layout className="flex-grow relative z-10 mb-3">
+                    <motion.div layout className="grow relative z-10 mb-3">
                       <p
                         className={`text-zinc-300 text-xs sm:text-sm font-medium leading-relaxed ${
                           isExpanded ? '' : 'line-clamp-3 sm:line-clamp-4'
