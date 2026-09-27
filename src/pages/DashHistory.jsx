@@ -330,7 +330,7 @@ const DashHistory = () => {
                         <div className="h-3 bg-[#2a2a2a] animate-pulse rounded w-16 ml-auto"></div>
                         <div className="h-6 sm:h-8 bg-[#2a2a2a] animate-pulse rounded w-24 ml-auto"></div>
                       </div>
-                      <div className="flex items-center gap-2 hidden sm:flex"> {/* Action Buttons placeholder */}
+                      <div className="flex items-center gap-2 sm:flex"> {/* Action Buttons placeholder */}
                         <div className="h-8 w-24 bg-[#2a2a2a] animate-pulse rounded-xl"></div>
                         <div className="h-8 w-24 bg-[#2a2a2a] animate-pulse rounded-xl"></div>
                       </div>

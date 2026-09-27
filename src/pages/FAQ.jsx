@@ -108,7 +108,7 @@ export default function FAQ() {
                     </span>
                     
                     <motion.div 
-                      className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-300 ${isActive ? 'border-[#2ecc71] text-[#2ecc71]' : 'border-gray-500 text-gray-500 group-hover:border-[#2ecc71] group-hover:text-[#2ecc71]'}`}
+                      className={`shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-300 ${isActive ? 'border-[#2ecc71] text-[#2ecc71]' : 'border-gray-500 text-gray-500 group-hover:border-[#2ecc71] group-hover:text-[#2ecc71]'}`}
                       animate={{ rotate: isActive ? 180 : 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >

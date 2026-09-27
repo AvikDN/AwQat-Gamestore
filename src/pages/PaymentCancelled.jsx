@@ -22,7 +22,7 @@ const PaymentCancelled = () => {
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
-        className="max-w-md w-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-[2rem] shadow-2xl p-8 text-center relative overflow-hidden"
+        className="max-w-md w-full bg-[#1c1c1c] border border-[#2a2a2a] rounded-4xl shadow-2xl p-8 text-center relative overflow-hidden"
       >
         {/* Glow Accent */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-2 bg-red-500 blur-xl opacity-50"></div>

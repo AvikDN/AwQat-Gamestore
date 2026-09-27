@@ -114,7 +114,7 @@ export default function Dashreview() {
   const confirmDelete = (id) => {
     toast(
       (t) => (
-        <div className="flex flex-col gap-3 min-w-[200px]">
+        <div className="flex flex-col gap-3 min-w-50">
           <p className="text-sm font-semibold text-white">
             Are you sure you want to delete this review?
           </p>
@@ -352,7 +352,7 @@ export default function Dashreview() {
             {/* DESKTOP VIEW (TABLE) */}
             <div className="hidden xl:block bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[850px]">
+                <table className="w-full text-left border-collapse min-w-212.5">
                   <thead>
                     <tr className="border-b border-[#2a2a2a] bg-[#121212] text-[11px] uppercase font-bold text-zinc-400 tracking-wider">
                       <th className="py-4 px-5 w-1/4">User & Rating</th>

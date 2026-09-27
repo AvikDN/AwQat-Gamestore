@@ -46,7 +46,7 @@ export default function Categories() {
   const displayedCategories = categories.slice(0, 9);
 
   return (
-    <section className="w-full max-w-[1000px] mx-auto py-16 px-4 md:px-8 overflow-visible">
+    <section className="w-full max-w-250 mx-auto py-16 px-4 md:px-8 overflow-visible">
       
       <div className="flex items-center justify-center mb-12">
         <motion.h2 
@@ -79,9 +79,9 @@ export default function Categories() {
                   variants={itemVariants}
                   style={{ rotate: baseRotation }}
                   // Fixed smaller width for the skeleton cards
-                  className="flex flex-col w-[130px] sm:w-[150px] md:w-[160px] p-2 pb-5 bg-[#8c8c8c] rounded-md shadow-xl"
+                  className="flex flex-col w-32.5 sm:w-37.5 md:w-40 p-2 pb-5 bg-[#8c8c8c] rounded-md shadow-xl"
                 >
-                  <div className="bg-gray-800 animate-pulse aspect-[4/3] rounded-sm w-full shadow-inner"></div>
+                  <div className="bg-gray-800 animate-pulse aspect-4/3 rounded-sm w-full shadow-inner"></div>
                   <div className="mt-3 flex justify-center">
                     <div className="h-3 w-16 bg-gray-500 animate-pulse rounded"></div>
                   </div>
@@ -108,10 +108,10 @@ export default function Categories() {
                     style={{ rotate: baseRotation }}
                     onClick={() => navigate(`/category/${cat.id}`)}
                     // Fixed smaller width, reduced padding
-                    className="flex flex-col w-[130px] sm:w-[140px] md:w-[160px] p-2 pb-5 bg-[#8c8c8c] transition-colors rounded-md shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer group relative"
+                    className="flex flex-col w-32.5 sm:w-35 md:w-40 p-2 pb-5 bg-[#8c8c8c] transition-colors rounded-md shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer group relative"
                   >
                     {/* Black Inner Background */}
-                    <div className="bg-black aspect-[4/3] rounded-sm flex items-center justify-center shadow-[inset_0_0_15px_rgba(0,0,0,0.8)] border border-[#000] overflow-hidden">
+                    <div className="bg-black aspect-4/3 rounded-sm flex items-center justify-center shadow-[inset_0_0_15px_rgba(0,0,0,0.8)] border border-black overflow-hidden">
                       <img 
                         src={cat.image} 
                         alt={cat.name} 
@@ -140,9 +140,9 @@ export default function Categories() {
                 whileTap={{ scale: 0.95 }}
                 style={{ rotate: rotations[displayedCategories.length % rotations.length] }}
                 onClick={() => navigate('/categories/')}
-                className="flex flex-col w-[130px] sm:w-[140px] md:w-[160px] p-2 pb-5 bg-[#8c8c8c] transition-colors rounded-md shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer relative"
+                className="flex flex-col w-32.5 sm:w-35 md:w-40 p-2 pb-5 bg-[#8c8c8c] transition-colors rounded-md shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer relative"
               >
-                <div className="bg-black aspect-[4/3] rounded-sm flex items-center justify-center shadow-[inset_0_0_15px_rgba(0,0,0,0.8)] border border-[#000] overflow-hidden">
+                <div className="bg-black aspect-4/3 rounded-sm flex items-center justify-center shadow-[inset_0_0_15px_rgba(0,0,0,0.8)] border border-black overflow-hidden">
                   <svg className="w-10 h-10 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>

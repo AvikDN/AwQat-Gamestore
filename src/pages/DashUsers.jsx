@@ -128,7 +128,7 @@ export default function DashUsers() {
   const confirmDelete = (userId, userName) => {
     toast(
       (t) => (
-        <div className="flex flex-col gap-3 min-w-[200px]">
+        <div className="flex flex-col gap-3 min-w-50">
           <div>
             <p className="text-sm font-extrabold text-white">Delete User?</p>
             <p className="text-xs text-zinc-400 mt-1">
@@ -395,7 +395,7 @@ export default function DashUsers() {
             {/* DESKTOP VIEW (TABLE) */}
             <div className="hidden xl:block bg-[#1c1c1c] border border-[#2a2a2a] rounded-[22px] overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[850px]">
+                <table className="w-full text-left border-collapse min-w-212.5">
                   <thead>
                     <tr className="border-b border-[#2a2a2a] bg-[#121212] text-[11px] uppercase font-bold text-zinc-400 tracking-wider">
                       <th className="py-4 px-5">User</th>

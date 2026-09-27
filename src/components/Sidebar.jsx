@@ -96,7 +96,7 @@ export default function Sidebar() {
         >
           <div className="flex-1 w-0 p-4">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#2ecc71]/10 border border-[#2ecc71]/30 flex items-center justify-center text-[#2ecc71] font-bold text-lg">
+              <div className="shrink-0 w-10 h-10 rounded-xl bg-[#2ecc71]/10 border border-[#2ecc71]/30 flex items-center justify-center text-[#2ecc71] font-bold text-lg">
                 ✓
               </div>
               <div className="flex-1">
@@ -136,7 +136,7 @@ export default function Sidebar() {
         initial={{ x: -50, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="hidden md:flex w-[280px] h-screen bg-[#121212] flex-col p-6 border-r border-[#222] shrink-0 sticky top-0 overflow-y-auto"
+        className="hidden md:flex w-70 h-screen bg-[#121212] flex-col p-6 border-r border-[#222] shrink-0 sticky top-0 overflow-y-auto"
       >
         
         {/* Logo Section */}
@@ -174,7 +174,7 @@ export default function Sidebar() {
         </motion.div>
 
         {/* Navigation Links */}
-        <nav className="flex flex-col gap-2 flex-grow">
+        <nav className="flex flex-col gap-2 grow">
           {navItems.map((item) => {
             const active = isActive(item.path);
             return (

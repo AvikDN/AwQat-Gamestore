@@ -14,7 +14,12 @@ const darkStyle = {
     border: '1px solid #27272a', 
     borderRadius: '12px',
     fontSize: '13px',
-    fontWeight: '600'
+    fontWeight: '600',
+    padding: '10px 16px',
+    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+    minWidth: '220px',
+    maxWidth: '340px',
+    whiteSpace: 'nowrap',
   },
   success: { iconTheme: { primary: '#2ecc71', secondary: '#18181c' } },
   error: { iconTheme: { primary: '#ef4444', secondary: '#18181c' } }
@@ -25,7 +30,6 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [cartId, setCartId] = useState(null);
 
-  // Check if user has "Admin" in their groups array
   const isAdmin = user?.groups?.includes('Admin');
 
   const fetchRemoteCart = async () => {
@@ -114,10 +118,10 @@ export const CartProvider = ({ children }) => {
       }
     }
 
-    // Trigger toast notification
-    const toastId = toast.loading("Adding to Cart...", { style: darkStyle.style });
+    const toastId = toast.loading("Adding to Cart...", { 
+      style: darkStyle.style 
+    });
 
-    // Instant Optimistic UI Update with correct quantity math
     setCartItems(prevItems => {
       const existingIndex = prevItems.findIndex(item => {
         const itemGameId = item.game?.id || item.game || item.gameId;
@@ -127,7 +131,6 @@ export const CartProvider = ({ children }) => {
       if (existingIndex >= 0) {
         const updated = [...prevItems];
         const currentQty = updated[existingIndex].quantity || 1;
-        // If adding a positive amount, add it. If negative (like clicking minus), subtract.
         const newQty = currentQty + quantity;
 
         if (newQty <= 0) {

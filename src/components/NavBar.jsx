@@ -8,6 +8,7 @@ import heartImg from '../assets/pics/heart.png';
 import defaultImg from '../assets/pics/profile_icon.svg';
 import { useAuthContext } from '../contexts/AuthContext';
 import { useCartContext } from '../contexts/CartContext';
+import { useWishlist } from '../contexts/WishlistContext';
 import CartDropdown from './CartDropdown'; 
 import GlassSurface from '../components/ReactBits/GlassSurface';
 
@@ -25,6 +26,8 @@ export default function NavBar() {
   
   const { user, logoutUser } = useAuthContext();
   const { totalItems } = useCartContext();
+  const { wishlistItems } = useWishlist();
+  const wishlistCount = wishlistItems?.length || 0;
   const navigate = useNavigate();
 
   // Handle Smart Scroll behavior
@@ -60,43 +63,7 @@ export default function NavBar() {
     logoutUser();
     setIsProfileOpen(false);
     setIsMenuOpen(false);
-    
-    toast.custom((t) => (
-      <motion.div
-        initial={{ opacity: 0, y: 50, scale: 0.9 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.95 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        className="max-w-sm w-full bg-[#1a1a1a] shadow-[0_8px_32px_0_rgba(0,0,0,0.8)] border border-[#333] rounded-2xl pointer-events-auto flex overflow-hidden"
-      >
-        <div className="flex-1 w-0 p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#2ecc71]/10 border border-[#2ecc71]/30 flex items-center justify-center text-[#2ecc71] font-bold text-lg">
-              ✓
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-bold text-white">
-                Logged Out
-              </p>
-              <p className="mt-0.5 text-xs text-gray-400">
-                You have successfully signed out of AwQat.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex border-l border-[#333]">
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="w-full border border-transparent rounded-none p-4 flex items-center justify-center text-xs font-bold text-[#2ecc71] hover:bg-white/5 transition-colors focus:outline-none cursor-pointer"
-          >
-            DISMISS
-          </button>
-        </div>
-      </motion.div>
-    ), {
-      position: 'bottom-right',
-      duration: 4000,
-    });
+    toast.success('Logged out successfully');
   };
 
   const menuVariants = {
@@ -141,13 +108,27 @@ export default function NavBar() {
       className="flex flex-wrap items-center justify-between w-full px-3 sm:px-4 md:px-8 py-3 md:py-4 bg-transparent fixed top-0 left-0 z-50 pointer-events-none"
     >
       <Toaster 
-        position="top-center"
+        position="top-left"
+        containerStyle={{
+          top: 14,
+          left: 'calc(50% + 200px)',
+          right: 'auto',
+        }}
         toastOptions={{
+          duration: 3500,
           style: { 
             background: '#18181c', 
             color: '#fff', 
             border: '1px solid #27272a', 
-            borderRadius: '12px' 
+            borderRadius: '12px',
+            fontSize: '13px',
+            fontWeight: '600',
+            padding: '10px 16px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)',
+            maxWidth: '240px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           },
           success: { 
             iconTheme: { 
@@ -155,6 +136,12 @@ export default function NavBar() {
               secondary: '#18181c' 
             } 
           },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#18181c'
+            }
+          }
         }}
       />
       
@@ -210,7 +197,7 @@ export default function NavBar() {
                   {isActive && (
                     <motion.div 
                       layoutId="desktop-nav-underline"
-                      className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                      className="absolute -bottom-1.5 left-0 right-0 h-1.25 bg-[#2ecc71] rounded-full"
                     />
                   )}
                 </>
@@ -228,7 +215,7 @@ export default function NavBar() {
                   {isActive && (
                     <motion.div 
                       layoutId="desktop-nav-underline"
-                      className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                      className="absolute -bottom-1.5 left-0 right-0 h-1.25 bg-[#2ecc71] rounded-full"
                     />
                   )}
                 </>
@@ -247,7 +234,7 @@ export default function NavBar() {
                   {isActive && (
                     <motion.div 
                       layoutId="desktop-nav-underline"
-                      className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                      className="absolute -bottom-1.5 left-0 right-0 h-1.25 bg-[#2ecc71] rounded-full"
                     />
                   )}
                 </>
@@ -269,17 +256,37 @@ export default function NavBar() {
           {/* Auth Section / Profile */}
           {user ? (
             <>
-              {/* Heart Icon (Wishlist) - Visible ONLY for Customers */}
+              {/* Heart Icon (Wishlist) with dynamic count badge */}
               {isCustomer && (
-                <NavLink to="/dashboard/wishlists" className="flex items-center justify-center" aria-label="Wishlist">
+                <NavLink 
+                  to="/dashboard/wishlists" 
+                  className="relative flex items-center justify-center cursor-pointer" 
+                  aria-label="Wishlist"
+                >
                   <motion.img 
-                    whileHover={{ scale: 1.1 }}
+                    whileHover={{ scale: 1.15 }}
                     whileTap={{ scale: 0.9 }}
                     src={heartImg} 
                     alt="Favorite" 
-                    className="w-6 h-6 md:w-7 md:h-7 cursor-pointer object-contain" 
+                    className="w-6 h-6 md:w-7 md:h-7 object-contain" 
                     style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(91%) saturate(7483%) hue-rotate(356deg) brightness(99%) contrast(115%)' }}
                   />
+
+                  {/* Animated Wishlist Badge */}
+                  <AnimatePresence>
+                    {wishlistCount > 0 && (
+                      <motion.span 
+                        key="wishlist-badge"
+                        initial={{ scale: 0, opacity: 0 }} 
+                        animate={{ scale: 1, opacity: 1 }} 
+                        exit={{ scale: 0, opacity: 0 }} 
+                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                        className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] md:text-[11px] font-black px-1.5 py-0.5 rounded-full shadow-md flex items-center justify-center min-w-4.5 min-h-4.5 border border-rose-400"
+                      >
+                        {wishlistCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </NavLink>
               )}
 
@@ -371,7 +378,6 @@ export default function NavBar() {
             className="relative flex items-center justify-center cursor-pointer transition-colors"
             aria-label="Cart"
           >
-            {/* Standalone Green Cart Icon (No Glow) */}
             <svg 
               className="w-6 h-6 md:w-7 md:h-7 text-[#2ecc71] transition-colors" 
               fill="none" 
@@ -389,7 +395,7 @@ export default function NavBar() {
                   animate={{ scale: 1, opacity: 1 }} 
                   exit={{ scale: 0, opacity: 0 }} 
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="absolute -top-1.5 -right-2 bg-white text-black text-[10px] md:text-[11px] font-black px-1.5 py-0.5 rounded-full shadow-sm flex items-center justify-center min-w-[18px] min-h-[18px] border border-gray-200"
+                  className="absolute -top-1.5 -right-2 bg-white text-black text-[10px] md:text-[11px] font-black px-1.5 py-0.5 rounded-full shadow-sm flex items-center justify-center min-w-4.5 min-h-4.5 border border-gray-200"
                 >
                   {totalItems}
                 </motion.span>
@@ -443,7 +449,7 @@ export default function NavBar() {
                     {isActive && (
                       <motion.div 
                         layoutId="mobile-nav-underline"
-                        className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                        className="absolute -bottom-1.5 left-0 right-0 h-1.25 bg-[#2ecc71] rounded-full"
                       />
                     )}
                   </>
@@ -465,7 +471,7 @@ export default function NavBar() {
                     {isActive && (
                       <motion.div 
                         layoutId="mobile-nav-underline"
-                        className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                        className="absolute -bottom-1.5 left-0 right-0 h-1.25 bg-[#2ecc71] rounded-full"
                       />
                     )}
                   </>
@@ -487,7 +493,7 @@ export default function NavBar() {
                     {isActive && (
                       <motion.div 
                         layoutId="mobile-nav-underline"
-                        className="absolute -bottom-1.5 left-0 right-0 h-[5px] bg-[#2ecc71] rounded-full"
+                        className="absolute -bottom-1.5 left-0 right-0 h-1.25 bg-[#2ecc71] rounded-full"
                       />
                     )}
                   </>
@@ -498,6 +504,23 @@ export default function NavBar() {
             {/* Auth Tablet & Mobile Links */}
             {user ? (
               <motion.div variants={linkVariants} className="w-full px-8 pt-4 border-t border-[#333] mt-2 flex flex-col gap-3">
+                {isCustomer && (
+                  <NavLink 
+                    to="/dashboard/wishlists" 
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center justify-between w-full px-4 py-3 rounded-xl font-bold text-white bg-white/5 hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img src={heartImg} alt="Wishlist" className="w-5 h-5 object-contain" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(91%) saturate(7483%) hue-rotate(356deg) brightness(99%) contrast(115%)' }} />
+                      <span>Wishlist</span>
+                    </div>
+                    {wishlistCount > 0 && (
+                      <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </NavLink>
+                )}
                 <NavLink 
                   to="/dashboard" 
                   onClick={() => setIsMenuOpen(false)}

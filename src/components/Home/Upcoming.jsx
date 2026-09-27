@@ -1,12 +1,26 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { FaHeart, FaRegHeart, FaCircleInfo } from 'react-icons/fa6';
+import toast from 'react-hot-toast';
 import apiClient from '../../services/api-client';
+import { useWishlist } from '../../contexts/WishlistContext';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 const AUTOPLAY_INTERVAL = 10000;
 const WHEEL_COOLDOWN = 600;
 const SWIPE_DISTANCE = 50;
 const SWIPE_VELOCITY = 400;
+
+const darkToastStyle = {
+  background: '#18181c',
+  color: '#ffffff',
+  border: '1px solid #27272a',
+  borderRadius: '12px',
+  fontSize: '13px',
+  fontWeight: '600',
+  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+};
 
 /*
  * =========================================================
@@ -80,6 +94,9 @@ export default function Upcoming() {
   const wheelTimeout = useRef(null);
 
   const shouldReduceMotion = useReducedMotion();
+
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const { user } = useAuthContext();
 
   /*
    * =========================================================
@@ -319,6 +336,18 @@ export default function Upcoming() {
     [currentVideo, isDesktop, shouldReduceMotion]
   );
 
+  const handleWishlistClick = (e, slide) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast.error('Please log in to add games to your wishlist.', { style: darkToastStyle });
+      return;
+    }
+
+    toggleWishlist(slide);
+  };
+
   if (loading) {
     return (
       <div className="relative w-full max-w-[1600px] mx-auto flex items-center justify-center py-8 md:py-16 px-2 md:px-8">
@@ -393,6 +422,7 @@ export default function Upcoming() {
             const isUpcoming = slide?.active === false;
             const title = slide?.title || 'Upcoming Game';
             const shouldLoadImage = Math.abs(index - currentIndex) <= 1;
+            const wishlisted = isWishlisted(slide?.id);
 
             return (
               <article
@@ -474,18 +504,44 @@ export default function Upcoming() {
                     transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, ease: 'easeOut' }}
                     className="pointer-events-none"
                   >
-                    <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 md:mb-8 tracking-wide leading-tight line-clamp-2 md:line-clamp-3 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+                    <h2 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 md:mb-6 tracking-wide leading-tight line-clamp-2 md:line-clamp-3 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                       {title}
                     </h2>
 
                     {slide?.id != null && (
-                      <Link
-                        to={`/product/${slide.id}`}
-                        tabIndex={isActiveSlide ? 0 : -1}
-                        className="pointer-events-auto inline-flex items-center justify-center w-max bg-[#2ecc71] text-black px-6 py-2.5 md:px-8 md:py-4 rounded-xl text-xs md:text-sm lg:text-lg font-extrabold hover:bg-[#27ae60] transition-all shadow-lg cursor-pointer"
-                      >
-                        Check Details
-                      </Link>
+                      <div className="flex flex-col items-start gap-2.5 sm:gap-3 pointer-events-auto">
+                        <Link
+                          to={`/product/${slide.id}`}
+                          tabIndex={isActiveSlide ? 0 : -1}
+                          className="inline-flex items-center justify-center gap-2 bg-[#2ecc71] text-black px-5 py-2.5 md:px-7 md:py-3 rounded-xl text-xs md:text-sm lg:text-base font-extrabold hover:bg-[#27ae60] transition-all shadow-lg cursor-pointer"
+                        >
+                          <FaCircleInfo className="text-xs md:text-sm" />
+                          <span>Check Details</span>
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleWishlistClick(e, slide)}
+                          tabIndex={isActiveSlide ? 0 : -1}
+                          className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 md:px-7 md:py-3 rounded-xl text-xs md:text-sm lg:text-base font-extrabold transition-all shadow-lg cursor-pointer backdrop-blur-md border ${
+                            wishlisted
+                              ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.35)] hover:bg-rose-500/30'
+                              : 'bg-black/40 text-white border-white/20 hover:bg-white/10 hover:border-white/40'
+                          }`}
+                        >
+                          {wishlisted ? (
+                            <>
+                              <FaHeart className="text-rose-500 text-sm md:text-base" />
+                              <span>Wishlisted</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaRegHeart className="text-sm md:text-base" />
+                              <span>Wishlist Now</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     )}
                   </motion.div>
                 </div>

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import apiClient from '../services/api-client';
 import { useCartContext } from '../contexts/CartContext';
+import WishlistButton from '../components/WishlistButton';
 
 export default function ProductList() {
   const [searchParams] = useSearchParams();
@@ -123,7 +124,7 @@ export default function ProductList() {
     if (sortOrder === 'high-to-low') queryParams.append('ordering', '-final_price');
 
     // Sidebar Filters
-    queryParams.append('min_price', debouncedMinPrice); // ADDED MIN PRICE
+    queryParams.append('min_price', debouncedMinPrice);
     queryParams.append('max_price', debouncedMaxPrice);
     
     if (selectedStudio !== 'All') queryParams.append('studio', selectedStudio);
@@ -241,17 +242,17 @@ export default function ProductList() {
 
       <div className="flex flex-col lg:flex-row gap-6 xl:gap-8 items-start">
         
-        <aside className="w-full lg:w-[280px] xl:w-[320px] flex-shrink-0 flex flex-col gap-6 lg:sticky lg:top-28 mt-0">
+        <aside className="w-full lg:w-70 xl:w-[320px] shrink-0 flex flex-col gap-6 lg:sticky lg:top-28 mt-0">
           
           {/* Box 1: Sort By */}
-          <div className="w-full bg-[#1a1a1a] rounded-[2rem] p-6 sm:p-8 flex flex-col gap-4">
+          <div className="w-full bg-[#1a1a1a] rounded-4xl p-6 sm:p-8 flex flex-col gap-4">
             <span className="text-xl font-bold text-[#ffffff] tracking-tight">Sort By:</span>
             <div className="relative">
               <select 
                 value={sortOrder}
                 onChange={(e) => {
                   setSortOrder(e.target.value);
-                  setPage(1); // Set page immediately on sort change
+                  setPage(1);
                 }}
                 className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base border border-[#404040]"
               >
@@ -267,7 +268,7 @@ export default function ProductList() {
           </div>
 
           {/* Box 2: Filters */}
-          <div className="w-full bg-[#1a1a1a] rounded-[2rem] p-6 sm:p-8 flex flex-col gap-6">
+          <div className="w-full bg-[#1a1a1a] rounded-4xl p-6 sm:p-8 flex flex-col gap-6">
             <h2 className="text-2xl xl:text-3xl font-bold text-white tracking-tight">Filters</h2>
             
             <div className="relative">
@@ -327,7 +328,7 @@ export default function ProductList() {
                   value={selectedStudio}
                   onChange={(e) => {
                     setSelectedStudio(e.target.value);
-                    setPage(1); // Set page immediately
+                    setPage(1);
                   }}
                   className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
                 >
@@ -347,7 +348,7 @@ export default function ProductList() {
                   value={selectedCategory}
                   onChange={(e) => {
                     setSelectedCategory(e.target.value);
-                    setPage(1); // Set page immediately
+                    setPage(1);
                   }}
                   className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
                 >
@@ -367,7 +368,7 @@ export default function ProductList() {
                   value={selectedAvailability}
                   onChange={(e) => {
                     setSelectedAvailability(e.target.value);
-                    setPage(1); // Set page immediately
+                    setPage(1);
                   }}
                   className="w-full bg-[#333333] text-gray-300 font-bold rounded-xl p-3.5 xl:p-4 appearance-none outline-none cursor-pointer hover:bg-[#404040] transition-colors text-sm xl:text-base"
                 >
@@ -390,7 +391,6 @@ export default function ProductList() {
             </div>
           </div>
         </aside>
-
         {/* MAIN PRODUCT GRID */}
         <div className="flex-1 w-full mt-0">
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 xl:gap-8">
@@ -402,12 +402,12 @@ export default function ProductList() {
                   className="flex flex-col"
                 >
                   <div className="animate-pulse flex flex-col h-full">
-                    <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] mb-4 bg-[#333]"></div>
+                    <div className="relative w-full aspect-square rounded-2xl md:rounded-4xl mb-4 bg-[#333]"></div>
                     <div className="flex flex-col px-1 mb-4">
                       <div className="h-6 bg-[#444] rounded w-3/4 mb-2"></div>
                       <div className="h-4 bg-[#222] rounded w-1/2"></div>
                     </div>
-                    <div className="mt-auto w-full h-[48px] bg-[#333] rounded-xl"></div>
+                    <div className="mt-auto w-full h-12 bg-[#333] rounded-xl"></div>
                   </div>
                 </div>
               ))
@@ -426,10 +426,10 @@ export default function ProductList() {
                     className={`flex flex-col slide-up-physical ${isVisible ? 'in-view' : ''}`}
                     style={{ transitionDelay: `${(index % 5) * 100}ms` }}
                   >
-                    
-                    <Link to={`/product/${product.id}`} className="block group cursor-pointer flex-grow">
-                      
-                      <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] flex items-center justify-center mb-4 bg-[#1a1a1a] overflow-hidden">
+                    <div className="relative flex flex-col grow">
+                      <Link to={`/product/${product.id}`} className="block group cursor-pointer grow">
+                        
+                        <div className="relative w-full aspect-square rounded-2xl md:rounded-4xl flex items-center justify-center mb-4 bg-[#1a1a1a] overflow-hidden">
                           {imageUrl ? (
                             <img 
                               src={imageUrl} 
@@ -453,26 +453,34 @@ export default function ProductList() {
                               Upcoming
                             </div>
                           )}
-                      </div>
+                        </div>
 
-                      <div className="flex flex-col mb-4">
-                        <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-[#2ecc71] transition-colors truncate">{product.title}</span>
-                        
-                        {/* Price Logic */}
-                        {isComingSoon ? (
-                          <span className="text-cyan-400 font-bold text-sm md:text-base">Available soon</span>
-                        ) : hasDiscount ? (
-                          <div className="flex items-center gap-2 text-sm md:text-base">
-                            <span className="text-gray-400 font-bold">Price:</span>
-                            <span className="text-gray-400 font-bold line-through">{originalPrice} ৳</span>
-                            <span className="text-white font-extrabold">{finalPrice.toFixed(0)} ৳</span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-300 font-bold text-sm md:text-base">Price: {originalPrice} ৳</span>
-                        )}
-                      </div>
+                        <div className="flex flex-col mb-4">
+                          <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-[#2ecc71] transition-colors truncate">
+                            {product.title}
+                          </span>
+                          
+                          {/* Price Logic */}
+                          {isComingSoon ? (
+                            <span className="text-cyan-400 font-bold text-sm md:text-base">Available soon</span>
+                          ) : hasDiscount ? (
+                            <div className="flex items-center gap-2 text-sm md:text-base">
+                              <span className="text-gray-400 font-bold">Price:</span>
+                              <span className="text-gray-400 font-bold line-through">{originalPrice} ৳</span>
+                              <span className="text-white font-extrabold">{finalPrice.toFixed(0)} ৳</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-300 font-bold text-sm md:text-base">Price: {originalPrice} ৳</span>
+                          )}
+                        </div>
 
-                    </Link>
+                      </Link>
+
+                      {/* Wishlist Button */}
+                      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
+                        <WishlistButton game={product} />
+                      </div>
+                    </div>
 
                     {isComingSoon ? (
                       <Link 
@@ -543,7 +551,7 @@ export default function ProductList() {
                 }`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             </motion.div>

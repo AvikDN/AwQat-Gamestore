@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import apiClient from '../../services/api-client';
-import { useCartContext } from '../../contexts/CartContext'; // Import the cart context
+import { useCartContext } from '../../contexts/CartContext';
+import WishlistButton from "../WishlistButton";;
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -53,7 +54,6 @@ export default function FeaturedProducts() {
     
     apiClient.get('/games/')
       .then(response => {
-        // Filter out upcoming/inactive games and games with price 0
         const activeProducts = response.data.results.filter(
           product => product.active && Number(product.price) > 0
         );
@@ -109,12 +109,12 @@ export default function FeaturedProducts() {
                 className="flex flex-col"
               >
                 <div className="animate-pulse flex flex-col h-full">
-                  <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] mb-4 sm:mb-6 bg-[#333]"></div>
+                  <div className="relative w-full aspect-square rounded-2xl md:rounded-4xl mb-4 sm:mb-6 bg-[#333]"></div>
                   <div className="flex flex-col px-1 sm:px-2 mb-4 sm:mb-6">
                     <div className="h-5 sm:h-7 bg-[#444] rounded w-3/4 mb-2 sm:mb-3"></div>
                     <div className="h-4 sm:h-6 bg-[#222] rounded w-1/2"></div>
                   </div>
-                  <div className="mt-auto w-full h-[48px] sm:h-[60px] md:h-[72px] bg-[#333] rounded-xl md:rounded-2xl"></div>
+                  <div className="mt-auto w-full h-12 sm:h-15 md:h-18 bg-[#333] rounded-xl md:rounded-2xl"></div>
                 </div>
               </motion.div>
             ))
@@ -136,53 +136,60 @@ export default function FeaturedProducts() {
                   whileHover={{ y: -8 }}
                   className="flex flex-col"
                 >
-                  <Link to={`/product/${product.id}`} className="block group cursor-pointer flex-grow">
-                    
-                    <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] flex items-center justify-center mb-4 sm:mb-6 bg-white/5 overflow-hidden border border-transparent group-hover:border-[#2ecc71]/30 transition-colors duration-300">
-                        {hasDiscount && (
-                          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full shadow-[0_0_10px_rgba(46,204,113,0.5)]">
-                            Sale
-                          </div>
-                        )}
-
-                        {imageUrl ? (
-                          <img 
-                            src={imageUrl} 
-                            alt={product.title} 
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          />
-                        ) : (
-                          <>
-                            <div className="absolute top-2 left-2 sm:top-4 sm:left-4 w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full bg-white/20"></div>
-                            <svg className="w-3/4 h-3/4 text-white/30 absolute bottom-[-4px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M4 20L12 10L16 15L20 9L24 15" />
-                                <path d="M4 20h20" />
-                            </svg>
-                          </>
-                        )}
-                    </div>
-
-                    <div className="flex flex-col px-1 sm:px-2 mb-4 sm:mb-6">
-                      <span className="font-extrabold text-white text-base sm:text-lg md:text-xl mb-1 group-hover:text-[#2ecc71] transition-colors line-clamp-1">{product.title}</span>
+                  <div className="relative flex flex-col grow">
+                    <Link to={`/product/${product.id}`} className="block group cursor-pointer grow">
                       
-                      {hasDiscount ? (
-                        <div className="flex items-center flex-wrap gap-x-2 text-sm sm:text-base md:text-lg">
-                          <span className="text-gray-400 line-through font-bold">{originalPrice} ৳</span>
-                          <span className="text-white font-extrabold">{finalPrice.toFixed(0)} ৳</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-300 font-bold text-sm sm:text-base md:text-lg">{originalPrice} ৳</span>
-                      )}
-                    </div>
+                      <div className="relative w-full aspect-square rounded-2xl md:rounded-4xl flex items-center justify-center mb-4 sm:mb-6 bg-white/5 overflow-hidden border border-transparent group-hover:border-[#2ecc71]/30 transition-colors duration-300">
+                          {hasDiscount && (
+                            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full shadow-[0_0_10px_rgba(46,204,113,0.5)]">
+                              Sale
+                            </div>
+                          )}
 
-                  </Link>
+                          {imageUrl ? (
+                            <img 
+                              src={imageUrl} 
+                              alt={product.title} 
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <>
+                              <div className="absolute top-2 left-2 sm:top-4 sm:left-4 w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full bg-white/20"></div>
+                              <svg className="w-3/4 h-3/4 text-white/30 absolute -bottom-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M4 20L12 10L16 15L20 9L24 15" />
+                                  <path d="M4 20h20" />
+                              </svg>
+                            </>
+                          )}
+                      </div>
+
+                      <div className="flex flex-col px-1 sm:px-2 mb-4 sm:mb-6">
+                        <span className="font-extrabold text-white text-base sm:text-lg md:text-xl mb-1 group-hover:text-[#2ecc71] transition-colors line-clamp-1">{product.title}</span>
+                        
+                        {hasDiscount ? (
+                          <div className="flex items-center flex-wrap gap-x-2 text-sm sm:text-base md:text-lg">
+                            <span className="text-gray-400 line-through font-bold">{originalPrice} ৳</span>
+                            <span className="text-white font-extrabold">{finalPrice.toFixed(0)} ৳</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 font-bold text-sm sm:text-base md:text-lg">{originalPrice} ৳</span>
+                        )}
+                      </div>
+
+                    </Link>
+
+                    {/* Floating Wishlist Button */}
+                    <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
+                      <WishlistButton game={product} />
+                    </div>
+                  </div>
 
                   {/* Add to Cart Button */}
                   <button 
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      addToCart(product, 1); // Pass the full product object here
+                      addToCart(product, 1);
                     }}
                     className="mt-auto w-full py-3 sm:py-4 md:py-5 bg-[#b0b0b0] hover:bg-[#2ecc71] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 rounded-xl md:rounded-2xl flex items-center justify-center group cursor-pointer"
                   >

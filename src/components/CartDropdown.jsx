@@ -34,7 +34,7 @@ export default function CartDropdown({ isOpen, onClose }) {
     <div
       className={`
         absolute top-full mt-3 z-50 overflow-hidden text-white p-4
-        right-0 w-[85vw] max-w-[340px] sm:max-w-none sm:w-96
+        right-0 w-[85vw] max-w-85 sm:max-w-none sm:w-96
         bg-[#18181c] border border-[#27272a] rounded-2xl shadow-2xl
       `}
     >
@@ -86,7 +86,7 @@ export default function CartDropdown({ isOpen, onClose }) {
                     <img
                       src={image}
                       alt={title}
-                      className="w-12 h-12 object-cover rounded-lg bg-[#222] flex-shrink-0"
+                      className="w-12 h-12 object-cover rounded-lg bg-[#222] shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <h4 className="font-bold text-xs sm:text-sm line-clamp-1">{title}</h4>
@@ -97,7 +97,7 @@ export default function CartDropdown({ isOpen, onClose }) {
                   </div>
 
                   {/* Quantity controls */}
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
                     <div className="flex h-8 sm:h-9 bg-[#222] rounded-lg overflow-hidden">
                       <button
                         onClick={() => addToCart(game, -1)}
@@ -106,7 +106,7 @@ export default function CartDropdown({ isOpen, onClose }) {
                       >
                         <FaMinus size={10} />
                       </button>
-                      <span className="px-2.5 flex items-center text-xs sm:text-sm font-bold min-w-[24px] justify-center">
+                      <span className="px-2.5 flex items-center text-xs sm:text-sm font-bold min-w-6 justify-center">
                         {item.quantity}
                       </span>
                       <button

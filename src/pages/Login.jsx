@@ -82,7 +82,7 @@ export default function Login() {
       variants={containerVariants}
     >
       <motion.div 
-        className="bg-[#5c5c5c] px-6 sm:px-8 md:px-12 w-full max-w-[500px] flex flex-col items-center shadow-2xl relative"
+        className="bg-[#5c5c5c] px-6 sm:px-8 md:px-12 w-full max-w-125 flex flex-col items-center shadow-2xl relative"
         style={{ 
           // Consistently applies the shape across all devices
           clipPath: 'polygon(0 20px, 20px 0, 20% 0, 28% 20px, 72% 20px, 80% 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), calc(100% - 20px) 100%, 75% 100%, 65% calc(100% - 70px), 35% calc(100% - 70px), 25% 100%, 20px 100%, 0 calc(100% - 20px))',

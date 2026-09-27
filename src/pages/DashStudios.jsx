@@ -130,7 +130,7 @@ const DashStudios = () => {
   const confirmDelete = (id) => {
     toast(
       (t) => (
-        <div className="flex flex-col gap-3 min-w-[200px]">
+        <div className="flex flex-col gap-3 min-w-50">
           <p className="text-sm font-semibold text-white">
             Are you sure you want to delete this studio?
           </p>

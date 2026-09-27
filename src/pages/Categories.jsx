@@ -69,7 +69,7 @@ export default function Categories() {
 
   return (
     <div className="bg-black min-h-screen w-full text-white selection:bg-[#2ecc71] selection:text-black">
-      <div className="max-w-[1400px] mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
+      <div className="max-w-350 mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
         
         {/* Header with Title and Sorting */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 md:mb-16 gap-6">
@@ -97,7 +97,7 @@ export default function Categories() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="relative w-full sm:w-[220px]"
+            className="relative w-full sm:w-55"
           >
             <select 
               value={ordering}
@@ -129,7 +129,7 @@ export default function Categories() {
               <motion.div 
                 key={`skeleton-${index}`} 
                 variants={itemVariants}
-                className="bg-[#1a1a1a] border border-[#333] rounded-3xl overflow-hidden flex flex-col h-[380px]"
+                className="bg-[#1a1a1a] border border-[#333] rounded-3xl overflow-hidden flex flex-col h-95"
               >
                 <div className="w-full h-48 bg-[#222] animate-pulse"></div>
                 <div className="p-6 flex flex-col flex-1 gap-4">
@@ -165,7 +165,7 @@ export default function Categories() {
                         </svg>
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] to-transparent opacity-80"></div>
+                    <div className="absolute inset-0 bg-linear-to-t from-[#1a1a1a] to-transparent opacity-80"></div>
                   </div>
                   
                   <div className="p-6 flex flex-col flex-1">

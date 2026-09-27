@@ -132,7 +132,7 @@ export default function Offers() {
         </motion.h2>
       </div>
 
-      <div className="relative w-full max-w-[300px] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[700px] xl:max-w-[900px] h-[240px] sm:h-[300px] md:h-[360px] lg:h-[480px] xl:h-[600px] mx-auto">
+      <div className="relative w-full max-w-75 sm:max-w-100 md:max-w-125 lg:max-w-175 xl:max-w-225 h-60 sm:h-75 md:h-90 lg:h-120 xl:h-150 mx-auto">
         
         <motion.div 
           className="absolute inset-0 z-40 touch-pan-y"
@@ -155,7 +155,7 @@ export default function Offers() {
                   animate={getCardAnimation(index, false, 3)}
                   exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className="absolute top-0 left-0 w-full h-full rounded-[2rem] p-5 md:p-8 lg:p-10 shadow-2xl flex flex-col bg-[#1a1a1a] border border-[#333]"
+                  className="absolute top-0 left-0 w-full h-full rounded-4xl p-5 md:p-8 lg:p-10 shadow-2xl flex flex-col bg-[#1a1a1a] border border-[#333]"
                 >
                   <div className="relative w-full h-[65%] flex items-center justify-center">
                     <div className="absolute inset-0 w-full h-full bg-[#333] animate-pulse rounded-xl z-10"></div>
@@ -195,7 +195,7 @@ export default function Offers() {
                 animate={getCardAnimation(index, animDirection, cards.length)}
                 exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                className={`absolute top-0 left-0 w-full h-full rounded-[2rem] p-5 md:p-8 lg:p-10 shadow-2xl flex flex-col ${index <= 2 ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}`}
+                className={`absolute top-0 left-0 w-full h-full rounded-4xl p-5 md:p-8 lg:p-10 shadow-2xl flex flex-col ${index <= 2 ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'}`}
                 style={{ backgroundColor: card.bgColor }}
               >
                 

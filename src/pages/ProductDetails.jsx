@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast, { Toaster } from 'react-hot-toast';
-import { FaStar, FaTrashCan, FaPenToSquare } from 'react-icons/fa6';
+import { FaStar, FaTrashCan, FaPenToSquare, FaHeart, FaRegHeart, FaCartShopping } from 'react-icons/fa6';
 import { FaSpinner, FaSave, FaTimes } from 'react-icons/fa';
 
 import apiClient from '../services/api-client';
 import AuthApiClient from '../services/auth-api-client';
 import { useCartContext } from '../contexts/CartContext';
+import { useWishlist } from '../contexts/WishlistContext';
+import { useAuthContext } from '../contexts/AuthContext';
 
 /*
  * =========================================================
@@ -106,6 +108,8 @@ export default function ProductDetails() {
   const [isUpdatingReview, setIsUpdatingReview] = useState(false);
 
   const { addToCart } = useCartContext();
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     setLoading(true);
@@ -173,6 +177,18 @@ export default function ProductDetails() {
 
   const increaseQuantity = () => {
     setQuantity(quantity + 1);
+  };
+
+  const handleWishlistToggle = () => {
+    if (!user) {
+      toast.error('Please log in to add games to your wishlist.');
+      return;
+    }
+    toggleWishlist(product);
+  };
+
+  const handleAddToCart = () => {
+    addToCart(product, quantity);
   };
 
   // Review Handlers
@@ -310,6 +326,7 @@ export default function ProductDetails() {
   const totalPrice = unitFinalPrice * quantity;
 
   const hasReviewed = currentUser && reviews.some((r) => r.user === currentUser.username);
+  const wishlisted = isWishlisted(product.id);
 
   // Render Sections
   const renderPurchasePanel = () => (
@@ -350,9 +367,9 @@ export default function ProductDetails() {
         </span>
       </div>
 
-      {!isComingSoon && (
-        <>
-          <div className="flex items-center gap-1.5 mb-6 relative z-10">
+      <div className="flex flex-col gap-3 relative z-10">
+        {!isComingSoon && (
+          <div className="flex items-center gap-1.5 mb-2">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -373,27 +390,47 @@ export default function ProductDetails() {
               +
             </motion.button>
           </div>
+        )}
 
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 relative z-10">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          {/* Wishlist Button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleWishlistToggle}
+            className={`flex-1 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all duration-300 cursor-pointer ${
+              wishlisted
+                ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)] hover:bg-rose-500/30'
+                : 'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-gray-500'
+            }`}
+          >
+            {wishlisted ? (
+              <>
+                <FaHeart className="text-rose-500 text-base" />
+                <span>Wishlisted</span>
+              </>
+            ) : (
+              <>
+                <FaRegHeart className="text-base" />
+                <span>Wishlist Now</span>
+              </>
+            )}
+          </motion.button>
+
+          {/* Add To Cart Button */}
+          {!isComingSoon && (
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => addToCart(product, quantity)}
-              className="flex-1 bg-[#333] hover:bg-[#2ecc71] hover:text-black hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-white font-bold text-center border border-transparent cursor-pointer"
+              onClick={handleAddToCart}
+              className="flex-1 bg-[#2ecc71] hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 px-4 rounded-xl text-black font-extrabold flex items-center justify-center gap-2 border border-transparent cursor-pointer"
             >
-              Add to cart
+              <FaCartShopping className="text-base" />
+              <span>Add to Cart</span>
             </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => addToCart(product, quantity)}
-              className="flex-1 bg-[#2ecc71] hover:bg-[#27ae60] hover:shadow-[0_0_15px_rgba(46,204,113,0.5)] transition-all duration-300 py-3 rounded-lg text-black font-extrabold text-center border border-transparent cursor-pointer"
-            >
-              Buy Now
-            </motion.button>
-          </div>
-        </>
-      )}
+          )}
+        </div>
+      </div>
     </motion.div>
   );
 

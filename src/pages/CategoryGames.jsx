@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import apiClient from '../services/api-client';
 import { useCartContext } from '../contexts/CartContext';
+import WishlistButton from '../components/WishlistButton';
 
 const itemVariants = {
     hidden: { opacity: 0, y: 30 },
@@ -158,12 +159,12 @@ export default function CategoryGames() {
 
                 <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                     {/* Search Input */}
-                    <div className="relative w-full sm:w-[250px] md:w-[300px]">
+                    <div className="relative w-full sm:w-62.5 md:w-75">
                         <input 
                             type="text" 
                             placeholder="Search games..." 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)} 
                             className="w-full bg-[#121212] text-white rounded-xl py-3 pl-4 pr-10 outline-none focus:ring-2 focus:ring-[#2ecc71] transition-shadow border border-[#333] placeholder-gray-500 font-medium"
                         />
                         <svg className="absolute right-3 top-3.5 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -172,10 +173,10 @@ export default function CategoryGames() {
                     </div>
 
                     {/* Ordering Select */}
-                    <div className="relative w-full sm:w-[200px]">
+                    <div className="relative w-full sm:w-50">
                         <select 
-                            value={ordering}
-                            onChange={(e) => setOrdering(e.target.value)}
+                            value={ordering} 
+                            onChange={(e) => setOrdering(e.target.value)} 
                             className="w-full bg-[#121212] text-white font-bold rounded-xl py-3 pl-4 pr-10 appearance-none outline-none cursor-pointer hover:bg-[#1f1f1f] transition-colors border border-[#333]"
                         >
                             <option value="default">Default</option>
@@ -198,12 +199,12 @@ export default function CategoryGames() {
                     [...Array(10)].map((_, index) => (
                         <div key={`skeleton-${index}`} className="flex flex-col">
                             <div className="animate-pulse flex flex-col h-full">
-                                <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] mb-4 bg-[#333]"></div>
+                                <div className="relative w-full aspect-square rounded-2xl md:rounded-4xl mb-4 bg-[#333]"></div>
                                 <div className="flex flex-col px-1 mb-4">
                                     <div className="h-6 bg-[#444] rounded w-3/4 mb-2"></div>
                                     <div className="h-4 bg-[#222] rounded w-1/2"></div>
                                 </div>
-                                <div className="mt-auto w-full h-[48px] bg-[#333] rounded-xl"></div>
+                                <div className="mt-auto w-full h-12 bg-[#333] rounded-xl"></div>
                             </div>
                         </div>
                     ))
@@ -223,56 +224,62 @@ export default function CategoryGames() {
                                 initial="hidden"
                                 animate="visible"
                                 style={{ transitionDelay: `${(index % 5) * 50}ms` }}
-                                className="flex flex-col group"
+                                className="flex flex-col group relative"
                             >
-                                <Link to={`/product/${product.id}`} className="block cursor-pointer flex-grow">
-                                    
-                                    <div className="relative w-full aspect-square rounded-2xl md:rounded-[2rem] flex items-center justify-center mb-4 bg-[#1a1a1a] overflow-hidden">
-                                        {imageUrl ? (
-                                            <img 
-                                                src={imageUrl} 
-                                                alt={product.title} 
-                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-500">
-                                                No Image
-                                            </div>
-                                        )}
+                                <div className="relative flex flex-col grow">
+                                    <Link to={`/product/${product.id}`} className="block cursor-pointer grow">
                                         
-                                        {/* Dynamic Tags */}
-                                        {hasDiscount && !isComingSoon && (
-                                            <div className="absolute top-4 right-4 bg-[#2ecc71] text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10 shadow-lg">
-                                                Sale
-                                            </div>
-                                        )}
-                                        {isComingSoon && (
-                                            <div className="absolute top-4 right-4 bg-cyan-400 text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10 shadow-lg">
-                                                Upcoming
-                                            </div>
-                                        )}
-                                    </div>
+                                        <div className="relative w-full aspect-square rounded-2xl md:rounded-4xl flex items-center justify-center mb-4 bg-[#1a1a1a] overflow-hidden">
+                                            {imageUrl ? (
+                                                <img 
+                                                    src={imageUrl} 
+                                                    alt={product.title} 
+                                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-gray-500">
+                                                    No Image
+                                                </div>
+                                            )}
+                                            
+                                            {/* Dynamic Status Badges */}
+                                            {hasDiscount && !isComingSoon && (
+                                                <div className="absolute top-4 right-4 bg-[#2ecc71] text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10 shadow-lg">
+                                                    Sale
+                                                </div>
+                                            )}
+                                            {isComingSoon && (
+                                                <div className="absolute top-4 right-4 bg-cyan-400 text-black text-xs sm:text-sm font-bold px-3 py-1 rounded-full z-10 shadow-lg">
+                                                    Upcoming
+                                                </div>
+                                            )}
+                                        </div>
 
-                                    <div className="flex flex-col mb-4 px-1">
-                                        <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-[#2ecc71] transition-colors truncate">
-                                            {product.title}
-                                        </span>
-                                        
-                                        {/* Price Logic */}
-                                        {isComingSoon ? (
-                                            <span className="text-cyan-400 font-bold text-sm md:text-base">Available soon</span>
-                                        ) : hasDiscount ? (
-                                            <div className="flex items-center gap-2 text-sm md:text-base">
-                                                <span className="text-white font-bold">Price:</span>
-                                                <span className="text-gray-400 font-bold line-through">{originalPrice} ৳</span>
-                                                <span className="text-white font-extrabold">{finalPrice.toFixed(0)} ৳</span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-gray-300 font-bold text-sm md:text-base">Price: {originalPrice} ৳</span>
-                                        )}
-                                    </div>
+                                        <div className="flex flex-col mb-4 px-1">
+                                            <span className="font-extrabold text-white text-lg md:text-xl xl:text-2xl mb-1 group-hover:text-[#2ecc71] transition-colors truncate">
+                                                {product.title}
+                                            </span>
+                                            
+                                            {/* Price Display */}
+                                            {isComingSoon ? (
+                                                <span className="text-cyan-400 font-bold text-sm md:text-base">Available soon</span>
+                                            ) : hasDiscount ? (
+                                                <div className="flex items-center gap-2 text-sm md:text-base">
+                                                    <span className="text-white font-bold">Price:</span>
+                                                    <span className="text-gray-400 font-bold line-through">{originalPrice} ৳</span>
+                                                    <span className="text-white font-extrabold">{finalPrice.toFixed(0)} ৳</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-300 font-bold text-sm md:text-base">Price: {originalPrice} ৳</span>
+                                            )}
+                                        </div>
+                                    </Link>
 
-                                </Link>
+                                    {/* Wishlist Button */}
+                                    <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
+                                        <WishlistButton game={product} />
+                                    </div>
+                                </div>
 
                                 {isComingSoon ? (
                                     <Link 
