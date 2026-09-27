@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { FaHeart, FaRegHeart } from 'react-icons/fa6';
 import apiClient from '../../services/api-client';
 import { useCartContext } from '../../contexts/CartContext';
-import WishlistButton from "../WishlistButton";;
+import { useWishlist } from '../../contexts/WishlistContext';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -28,6 +29,7 @@ export default function FeaturedProducts() {
   const [visibleCount, setVisibleCount] = useState(10); 
   
   const { addToCart } = useCartContext();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
   useEffect(() => {
     const calculateVisibleItems = () => {
@@ -65,6 +67,12 @@ export default function FeaturedProducts() {
         setIsLoading(false);
       });
   }, []);
+
+  const handleWishlistClick = (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist(product);
+  };
 
   const displayedProducts = products.slice(0, visibleCount);
 
@@ -129,6 +137,8 @@ export default function FeaturedProducts() {
                 ? (discountValue <= 100 ? originalPrice - (originalPrice * discountValue) / 100 : originalPrice - discountValue) 
                 : originalPrice;
 
+              const wishlisted = isWishlisted(product.id);
+
               return (
                 <motion.div
                   key={product.id}
@@ -140,27 +150,27 @@ export default function FeaturedProducts() {
                     <Link to={`/product/${product.id}`} className="block group cursor-pointer grow">
                       
                       <div className="relative w-full aspect-square rounded-2xl md:rounded-4xl flex items-center justify-center mb-4 sm:mb-6 bg-white/5 overflow-hidden border border-transparent group-hover:border-[#2ecc71]/30 transition-colors duration-300">
-                          {hasDiscount && (
-                            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full shadow-[0_0_10px_rgba(46,204,113,0.5)]">
-                              Sale
-                            </div>
-                          )}
+                        {hasDiscount && (
+                          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 bg-[#2ecc71] text-black font-extrabold text-xs sm:text-sm px-3 py-1 rounded-full shadow-[0_0_10px_rgba(46,204,113,0.5)]">
+                            Sale
+                          </div>
+                        )}
 
-                          {imageUrl ? (
-                            <img 
-                              src={imageUrl} 
-                              alt={product.title} 
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            />
-                          ) : (
-                            <>
-                              <div className="absolute top-2 left-2 sm:top-4 sm:left-4 w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full bg-white/20"></div>
-                              <svg className="w-3/4 h-3/4 text-white/30 absolute -bottom-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M4 20L12 10L16 15L20 9L24 15" />
-                                  <path d="M4 20h20" />
-                              </svg>
-                            </>
-                          )}
+                        {imageUrl ? (
+                          <img 
+                            src={imageUrl} 
+                            alt={product.title} 
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <>
+                            <div className="absolute top-2 left-2 sm:top-4 sm:left-4 w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full bg-white/20"></div>
+                            <svg className="w-3/4 h-3/4 text-white/30 absolute -bottom-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M4 20L12 10L16 15L20 9L24 15" />
+                              <path d="M4 20h20" />
+                            </svg>
+                          </>
+                        )}
                       </div>
 
                       <div className="flex flex-col px-1 sm:px-2 mb-4 sm:mb-6">
@@ -178,9 +188,33 @@ export default function FeaturedProducts() {
 
                     </Link>
 
-                    {/* Floating Wishlist Button */}
+                    {/* Integrated Wishlist Button */}
                     <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
-                      <WishlistButton game={product} />
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.12 }}
+                        whileTap={{ scale: 0.88 }}
+                        onClick={(e) => handleWishlistClick(e, product)}
+                        title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                        className={`relative flex items-center justify-center p-2 rounded-xl transition-all duration-200 cursor-pointer backdrop-blur-md ${
+                          wishlisted
+                            ? 'bg-rose-500/20 border border-rose-500/40 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
+                            : 'bg-[#18181c]/80 hover:bg-[#222228] border border-[#27272a] text-zinc-400 hover:text-white hover:border-[#383838]'
+                        }`}
+                      >
+                        <motion.div
+                          key={wishlisted ? 'active' : 'inactive'}
+                          initial={{ scale: 0.6, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                        >
+                          {wishlisted ? (
+                            <FaHeart className="text-sm text-rose-500" />
+                          ) : (
+                            <FaRegHeart className="text-sm" />
+                          )}
+                        </motion.div>
+                      </motion.button>
                     </div>
                   </div>
 

@@ -89,18 +89,20 @@ export function WishlistProvider({ children }) {
       ]);
     }
 
+    const firstWord = game.title?.trim().split(/\s+/)[0] || 'Item';
+
     try {
       const res = await AuthApiClient.post('/api/wishlist/toggle/', { game_id: gameId });
       
       if (res.data.status === 'added') {
-        showWishlistToast(`Added ${game.title} to wishlist!`, 'success');
+        showWishlistToast(`Added ${firstWord} to wishlist!`, 'success');
       } else {
-        showWishlistToast(`Removed ${game.title} from wishlist`, 'remove');
+        showWishlistToast(`Removed ${firstWord} from wishlist`, 'remove');
       }
       fetchWishlist();
     } catch (error) {
       fetchWishlist();
-      showWishlistToast('Failed to update wishlist', 'error');
+      showWishlistToast('Failed to update wishlist. Try again.', 'error');
     }
   };
 

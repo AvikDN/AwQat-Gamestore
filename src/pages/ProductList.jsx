@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { FaHeart, FaRegHeart } from 'react-icons/fa6';
 import apiClient from '../services/api-client';
 import { useCartContext } from '../contexts/CartContext';
-import WishlistButton from '../components/WishlistButton';
+import { useWishlist } from '../contexts/WishlistContext';
 
 export default function ProductList() {
   const [searchParams] = useSearchParams();
@@ -17,8 +18,9 @@ export default function ProductList() {
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Pull add to cart context
+  // Contexts
   const { addToCart } = useCartContext();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -38,14 +40,12 @@ export default function ProductList() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedAvailability, setSelectedAvailability] = useState('All');
 
-  // Keep search term synced if URL changes externally
   useEffect(() => {
     setSearchTerm(urlSearchQuery);
     setDebouncedSearch(urlSearchQuery);
-    setPage(1); // Reset page on new external search
+    setPage(1);
   }, [urlSearchQuery]);
 
-  // Fetch ALL Studios and Categories (Handling Pagination)
   useEffect(() => {
     const fetchAllPages = async (endpoint) => {
       let results = [];
@@ -91,21 +91,18 @@ export default function ProductList() {
     loadFilters();
   }, []);
 
-  // Debounce search and price terms to prevent rapid API calls
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Only trigger if values actually changed to prevent unnecessary renders
       if (debouncedSearch !== searchTerm || debouncedMinPrice !== minPrice || debouncedMaxPrice !== maxPrice) {
         setDebouncedSearch(searchTerm);
         setDebouncedMinPrice(minPrice);
         setDebouncedMaxPrice(maxPrice);
-        setPage(1); // Automatically reset page when typing/sliding stops
+        setPage(1);
       }
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm, minPrice, maxPrice, debouncedSearch, debouncedMinPrice, debouncedMaxPrice]);
 
-  // Fetch Games based on current page and backend filters
   useEffect(() => {
     setIsLoading(true);
     
@@ -118,12 +115,10 @@ export default function ProductList() {
 
     const queryParams = new URLSearchParams({ page: page });
 
-    // Search and Sort
     if (debouncedSearch) queryParams.append('search', debouncedSearch);
     if (sortOrder === 'low-to-high') queryParams.append('ordering', 'final_price');
     if (sortOrder === 'high-to-low') queryParams.append('ordering', '-final_price');
 
-    // Sidebar Filters
     queryParams.append('min_price', debouncedMinPrice);
     queryParams.append('max_price', debouncedMaxPrice);
     
@@ -136,7 +131,6 @@ export default function ProductList() {
         
         let fetchedProducts = Array.isArray(data) ? data : (data.results || []);
 
-        // Extra frontend safety net: filter out zero-price or inactive games if low-to-high is selected
         if (sortOrder === 'low-to-high') {
           fetchedProducts = fetchedProducts.filter(product => product.active && parseFloat(product.price) > 0);
         }
@@ -187,6 +181,12 @@ export default function ProductList() {
   const handleMaxChange = (e) => {
     const value = Math.max(Number(e.target.value), minPrice + 100);
     setMaxPrice(value);
+  };
+
+  const handleWishlistClick = (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist(product);
   };
 
   useEffect(() => {
@@ -391,6 +391,7 @@ export default function ProductList() {
             </div>
           </div>
         </aside>
+
         {/* MAIN PRODUCT GRID */}
         <div className="flex-1 w-full mt-0">
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 xl:gap-8">
@@ -419,6 +420,7 @@ export default function ProductList() {
                 const hasDiscount = discountVal > 0;
                 const finalPrice = hasDiscount ? originalPrice - (originalPrice * (discountVal / 100)) : originalPrice;
                 const isComingSoon = !product.active;
+                const wishlisted = isWishlisted(product.id);
 
                 return (
                   <div
@@ -476,9 +478,33 @@ export default function ProductList() {
 
                       </Link>
 
-                      {/* Wishlist Button */}
+                      {/* Integrated Wishlist Button */}
                       <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
-                        <WishlistButton game={product} />
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.12 }}
+                          whileTap={{ scale: 0.88 }}
+                          onClick={(e) => handleWishlistClick(e, product)}
+                          title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+                          className={`relative flex items-center justify-center p-2 rounded-xl transition-all duration-200 cursor-pointer backdrop-blur-md ${
+                            wishlisted
+                              ? 'bg-rose-500/20 border border-rose-500/40 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
+                              : 'bg-[#18181c]/80 hover:bg-[#222228] border border-[#27272a] text-zinc-400 hover:text-white hover:border-[#383838]'
+                          }`}
+                        >
+                          <motion.div
+                            key={wishlisted ? 'active' : 'inactive'}
+                            initial={{ scale: 0.6, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                          >
+                            {wishlisted ? (
+                              <FaHeart className="text-sm text-rose-500" />
+                            ) : (
+                              <FaRegHeart className="text-sm" />
+                            )}
+                          </motion.div>
+                        </motion.button>
                       </div>
                     </div>
 

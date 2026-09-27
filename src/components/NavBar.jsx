@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { FaUser, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
+import { FaCircleCheck } from 'react-icons/fa6';
 import toast, { Toaster } from 'react-hot-toast';
 import logoImg from '../assets/Awqat_full.png'; 
 import heartImg from '../assets/pics/heart.png';
@@ -33,15 +34,12 @@ export default function NavBar() {
   // Handle Smart Scroll behavior
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious();
-    // If scrolling down AND past 100px threshold, hide the sides
     if (latest > previous && latest > 100) {
       setHiddenSides(true);
-      // Automatically close menus if they are open while scrolling down
       setIsProfileOpen(false);
       setIsCartOpen(false);
       setIsMenuOpen(false);
     } else {
-      // If scrolling up, show the sides
       setHiddenSides(false);
     }
   });
@@ -63,7 +61,23 @@ export default function NavBar() {
     logoutUser();
     setIsProfileOpen(false);
     setIsMenuOpen(false);
-    toast.success('Logged out successfully');
+
+    toast.custom((t) => (
+      <div
+        className={`${
+          t.visible ? 'animate-enter' : 'animate-leave'
+        } flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-[#18181c] border border-[#27272a] shadow-[0_10px_30px_rgba(0,0,0,0.8)] pointer-events-auto w-72 select-none`}
+      >
+        <div className="shrink-0 flex items-center justify-center">
+          <FaCircleCheck className="text-[#2ecc71] text-base" />
+        </div>
+        <p className="text-xs font-semibold text-white truncate flex-1 m-0">
+          Logged out successfully
+        </p>
+      </div>
+    ), {
+      duration: 3500,
+    });
   };
 
   const menuVariants = {
@@ -92,7 +106,6 @@ export default function NavBar() {
     exit: { opacity: 0, y: -10 },
   };
 
-  // Animation variants for the smart-scrolling sides
   const sideNavVariants = {
     visible: { y: 0, opacity: 1, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } },
     hidden: { y: -100, opacity: 0, transition: { duration: 0.4, ease: [0.25, 1, 0.5, 1] } }
@@ -111,37 +124,8 @@ export default function NavBar() {
         position="top-left"
         containerStyle={{
           top: 14,
-          left: 'calc(50% + 200px)',
+          left: 'calc(50% + 180px)',
           right: 'auto',
-        }}
-        toastOptions={{
-          duration: 3500,
-          style: { 
-            background: '#18181c', 
-            color: '#fff', 
-            border: '1px solid #27272a', 
-            borderRadius: '12px',
-            fontSize: '13px',
-            fontWeight: '600',
-            padding: '10px 16px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.6)',
-            maxWidth: '240px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          },
-          success: { 
-            iconTheme: { 
-              primary: '#10b981', 
-              secondary: '#18181c' 
-            } 
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#18181c'
-            }
-          }
         }}
       />
       
@@ -250,13 +234,11 @@ export default function NavBar() {
         animate={hiddenSides ? "hidden" : "visible"}
         className="flex items-center gap-1 sm:gap-2 md:gap-4 z-20 pointer-events-auto"
       >
-        
-       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
           
           {/* Auth Section / Profile */}
           {user ? (
             <>
-              {/* Heart Icon (Wishlist) with dynamic count badge */}
               {isCustomer && (
                 <NavLink 
                   to="/dashboard/wishlists" 
@@ -272,7 +254,6 @@ export default function NavBar() {
                     style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(91%) saturate(7483%) hue-rotate(356deg) brightness(99%) contrast(115%)' }}
                   />
 
-                  {/* Animated Wishlist Badge */}
                   <AnimatePresence>
                     {wishlistCount > 0 && (
                       <motion.span 
@@ -313,7 +294,6 @@ export default function NavBar() {
                   <FaChevronDown className="text-white text-xs hidden lg:block mr-1" />
                 </motion.button>
 
-                {/* Profile Dropdown - Desktop Only (lg and up) */}
                 <AnimatePresence>
                   {isProfileOpen && (
                     <motion.div
@@ -387,7 +367,6 @@ export default function NavBar() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
 
-            {/* Dynamic Cart Badge */}
             <AnimatePresence>
               {totalItems > 0 && (
                 <motion.span 
@@ -403,11 +382,10 @@ export default function NavBar() {
             </AnimatePresence>
           </motion.button>
 
-          {/* Cart Dropdown Flyout Window */}
           <CartDropdown isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
         </div>
         
-        {/* Tablet & Mobile Menu Hamburger Button (Visible below lg) */}
+        {/* Tablet & Mobile Menu Hamburger Button */}
         <motion.button 
           whileTap={{ scale: 0.8 }}
           className="lg:hidden flex items-center justify-center ml-1 sm:ml-2 text-white cursor-pointer hover:text-[#2ecc71] transition-colors"
@@ -425,7 +403,7 @@ export default function NavBar() {
 
       </motion.div>
 
-      {/* Tablet & Mobile Menu Dropdown (Visible below lg) */}
+      {/* Tablet & Mobile Menu Dropdown */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div 
@@ -501,7 +479,6 @@ export default function NavBar() {
               </NavLink>
             </motion.div>
 
-            {/* Auth Tablet & Mobile Links */}
             {user ? (
               <motion.div variants={linkVariants} className="w-full px-8 pt-4 border-t border-[#333] mt-2 flex flex-col gap-3">
                 {isCustomer && (

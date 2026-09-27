@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { FaStar, FaTrashCan, FaPenToSquare, FaHeart, FaRegHeart, FaCartShopping } from 'react-icons/fa6';
 import { FaSpinner, FaSave, FaTimes } from 'react-icons/fa';
 
@@ -180,10 +180,6 @@ export default function ProductDetails() {
   };
 
   const handleWishlistToggle = () => {
-    if (!user) {
-      toast.error('Please log in to add games to your wishlist.');
-      return;
-    }
     toggleWishlist(product);
   };
 
@@ -622,15 +618,6 @@ export default function ProductDetails() {
 
   return (
     <div className="bg-transparent min-h-screen w-full text-white selection:bg-[#2ecc71] selection:text-black">
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: { background: '#18181c', color: '#fff', border: '1px solid #27272a', borderRadius: '12px', fontSize: '13px', fontWeight: '600' },
-          success: { iconTheme: { primary: '#10b981', secondary: '#18181c' } },
-          error: { iconTheme: { primary: '#f87171', secondary: '#18181c' } }
-        }}
-      />
-
       <div className="max-w-350 mx-auto p-4 pt-28 md:p-8 md:pt-32 xl:p-12 xl:pt-36">
         <motion.div
           variants={containerVariants}

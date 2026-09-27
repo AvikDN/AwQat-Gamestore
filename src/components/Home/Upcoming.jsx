@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FaHeart, FaRegHeart, FaCircleInfo } from 'react-icons/fa6';
-import toast from 'react-hot-toast';
 import apiClient from '../../services/api-client';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -11,16 +10,6 @@ const AUTOPLAY_INTERVAL = 10000;
 const WHEEL_COOLDOWN = 600;
 const SWIPE_DISTANCE = 50;
 const SWIPE_VELOCITY = 400;
-
-const darkToastStyle = {
-  background: '#18181c',
-  color: '#ffffff',
-  border: '1px solid #27272a',
-  borderRadius: '12px',
-  fontSize: '13px',
-  fontWeight: '600',
-  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
-};
 
 /*
  * =========================================================
@@ -339,12 +328,6 @@ export default function Upcoming() {
   const handleWishlistClick = (e, slide) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (!user) {
-      toast.error('Please log in to add games to your wishlist.', { style: darkToastStyle });
-      return;
-    }
-
     toggleWishlist(slide);
   };
 
