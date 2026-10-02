@@ -240,35 +240,37 @@ export default function NavBar() {
           {user ? (
             <>
               {isCustomer && (
-                <NavLink 
-                  to="/dashboard/wishlists" 
-                  className="relative flex items-center justify-center cursor-pointer" 
-                  aria-label="Wishlist"
-                >
-                  <motion.img 
-                    whileHover={{ scale: 1.15 }}
-                    whileTap={{ scale: 0.9 }}
-                    src={heartImg} 
-                    alt="Favorite" 
-                    className="w-6 h-6 md:w-7 md:h-7 object-contain" 
-                    style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(91%) saturate(7483%) hue-rotate(356deg) brightness(99%) contrast(115%)' }}
-                  />
+            <NavLink 
+            to="/dashboard/wishlists" 
+            className="relative flex items-center justify-center cursor-pointer" 
+            aria-label="Wishlist"
+                    >
+            <motion.img 
+              whileHover={{ scale: 1.15 }}
+              whileTap={{ scale: 0.9 }}
+              src={heartImg} 
+              alt="Favorite" 
+              className="w-6 h-6 md:w-7 md:h-7 object-contain" 
+              
+              style={{ filter: 'brightness(0) saturate(100%) invert(46%) sepia(74%) saturate(2132%) hue-rotate(326deg) brightness(101%) contrast(99%)' }}
+            />
 
-                  <AnimatePresence>
-                    {wishlistCount > 0 && (
-                      <motion.span 
-                        key="wishlist-badge"
-                        initial={{ scale: 0, opacity: 0 }} 
-                        animate={{ scale: 1, opacity: 1 }} 
-                        exit={{ scale: 0, opacity: 0 }} 
-                        transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                        className="absolute -top-1.5 -right-2 bg-rose-500 text-white text-[10px] md:text-[11px] font-black px-1.5 py-0.5 rounded-full shadow-md flex items-center justify-center min-w-4.5 min-h-4.5 border border-rose-400"
-                      >
-                        {wishlistCount}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </NavLink>
+              <AnimatePresence>
+                {wishlistCount > 0 && (
+                  <motion.span 
+                    key="wishlist-badge"
+                    initial={{ scale: 0, opacity: 0 }} 
+                    animate={{ scale: 1, opacity: 1 }} 
+                    exit={{ scale: 0, opacity: 0 }} 
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                    
+                    className="absolute -top-1.5 -right-2 bg-[#BFBFBF] text-black text-[10px] md:text-[11px] font-black px-1.5 py-0.5 rounded-full shadow-md flex items-center justify-center min-w-4.5 min-h-4.5 border border-[#BFBFBF]"
+                  >
+                    {wishlistCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </NavLink>
               )}
 
               <div className="relative" ref={profileRef}>

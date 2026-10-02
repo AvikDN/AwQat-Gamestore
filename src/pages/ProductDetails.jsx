@@ -395,9 +395,7 @@ export default function ProductDetails() {
             whileTap={{ scale: 0.98 }}
             onClick={handleWishlistToggle}
             className={`flex-1 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 border transition-all duration-300 cursor-pointer ${
-              wishlisted
-                ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)] hover:bg-rose-500/30'
-                : 'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-gray-500'
+               'bg-[#222] hover:bg-[#2a2a2a] text-white border-[#333] hover:border-gray-500'
             }`}
           >
             {wishlisted ? (

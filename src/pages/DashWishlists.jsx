@@ -273,7 +273,7 @@ export default function DashWishlists() {
           {/* Header */}
           <div className="flex items-center justify-between gap-4 border-b border-[#222222] pb-4 sm:pb-5">
             <div className="flex items-center gap-3">
-              <FaHeart className="text-2xl sm:text-4xl text-rose-500 shrink-0" />
+              <FaHeart className="text-2xl sm:text-4xl text-white shrink-0" />
               <div>
                 <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
                   My Wishlist
