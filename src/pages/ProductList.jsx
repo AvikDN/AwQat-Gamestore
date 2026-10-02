@@ -487,9 +487,7 @@ export default function ProductList() {
                           onClick={(e) => handleWishlistClick(e, product)}
                           title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
                           className={`relative flex items-center justify-center p-2 rounded-xl transition-all duration-200 cursor-pointer backdrop-blur-md ${
-                            wishlisted
-                              ? 'bg-rose-500/20 border border-rose-500/40 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
-                              : 'bg-[#18181c]/80 hover:bg-[#222228] border border-[#27272a] text-zinc-400 hover:text-white hover:border-[#383838]'
+                          'bg-[#18181c]/80 hover:bg-[#222228] border border-[#27272a] text-zinc-400 hover:text-white hover:border-[#383838]'
                           }`}
                         >
                           <motion.div
